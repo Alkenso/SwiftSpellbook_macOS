@@ -24,15 +24,12 @@ import Foundation
 import SpellbookFoundation
 
 extension FileManager {
-    public func acl(atPath path: String, followSymlinks: Bool = true, type: acl_type_t = ACL_TYPE_EXTENDED) throws -> ACL {
-        let acl = try NSError.posix.try {
-            if followSymlinks {
-                acl_get_file(path, type)
-            } else {
-                acl_get_link_np(path, type)
-            }
-        }
-        return try ACL(acl: acl)
+    public func acl(
+        atPath path: String,
+        followSymlinks: Bool = true,
+        type: acl_type_t = ACL_TYPE_EXTENDED
+    ) throws -> ACL {
+        try acl { followSymlinks ? acl_get_file(path, type) : acl_get_link_np(path, type) }
     }
     
     public func setACL(
@@ -47,8 +44,7 @@ extension FileManager {
     }
     
     public func acl(fd: Int32, type: acl_type_t = ACL_TYPE_EXTENDED) throws -> ACL {
-        let acl = try NSError.posix.try { acl_get_fd_np(fd, type) }
-        return try ACL(acl: acl)
+        try acl { acl_get_fd_np(fd, type) }
     }
     
     public func setACL(_ acl: ACL, fd: Int32, type: acl_type_t = ACL_TYPE_EXTENDED) throws {
@@ -56,12 +52,19 @@ extension FileManager {
         defer { acl_free(.init(native)) }
         try checkStatus(acl_set_fd_np(fd, native, type))
     }
+    
+    private func acl(body: () -> acl_t?) throws -> ACL {
+        let native = try NSError.posix.try(body: body)
+        defer { acl_free(.init(native)) }
+        
+        return try ACL(acl: native)
+    }
 }
 
-public struct ACL {
+public struct ACL: Equatable {
     public var entries: [ACLEntry]
     
-    public init(entries: [ACLEntry]) {
+    public init(entries: [ACLEntry] = []) {
         self.entries = entries
     }
 }
@@ -122,25 +125,30 @@ extension ACL {
     }
 }
 
-public struct ACLEntry {
-    public var tag: ACLTag
-    public var permset: ACLPerm
-    public var qualifier: (id: id_t, type: MBRIDType)
+public struct ACLQualifier: Equatable {
+    public var id: id_t
+    public var type: MBRIDType
     
-    public init(tag: ACLTag, permset: ACLPerm, qualifier: (id: id_t, type: MBRIDType)) {
-        self.tag = tag
-        self.permset = permset
-        self.qualifier = qualifier
+    public init(id: id_t, type: MBRIDType) {
+        self.id = id
+        self.type = type
     }
 }
 
-extension ACLEntry {
-    public init(tag: ACLTag, permset: ACLPerm, uid: uid_t) {
-        self.init(tag: tag, permset: permset, qualifier: (uid, .uid))
-    }
+extension ACLQualifier {
+    public static func uid(_ uid: uid_t) -> Self { .init(id: uid, type: .uid) }
+    public static func gid(_ gid: gid_t) -> Self { .init(id: gid, type: .gid) }
+}
+
+public struct ACLEntry: Equatable {
+    public var tag: ACLTag
+    public var permset: ACLPerm
+    public var qualifier: ACLQualifier
     
-    public init(tag: ACLTag, permset: ACLPerm, gid: gid_t) {
-        self.init(tag: tag, permset: permset, qualifier: (gid, .gid))
+    public init(tag: ACLTag, permset: ACLPerm, qualifier: ACLQualifier) {
+        self.tag = tag
+        self.permset = permset
+        self.qualifier = qualifier
     }
 }
 
@@ -183,12 +191,13 @@ extension ACLEntry {
             try checkStatus(acl_set_permset_mask_np(native, acl_permset_mask_t(set.rawValue)))
         }
         
-        public func qualifier() throws -> (id_t, MBRIDType) {
+        public func qualifier() throws -> ACLQualifier {
             let ptr = try NSError.posix.try { acl_get_qualifier(native) }
             defer { acl_free(ptr) }
             
             let uuid = UUID(uuid: ptr.bindMemory(to: uuid_t.self, capacity: 1).pointee)
-            return try Membership.uuidToID(uuid)
+            let (id, type) = try Membership.uuidToID(uuid)
+            return .init(id: id, type: type)
         }
         
         public func setQualifier(_ id: id_t, type: MBRIDType) throws {
