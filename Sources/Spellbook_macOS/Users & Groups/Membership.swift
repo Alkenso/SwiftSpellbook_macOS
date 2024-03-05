@@ -23,6 +23,7 @@
 import Foundation
 @_implementationOnly import Spellbook_macOS.ObjC
 
+/// Swift wrapper around `membership.h` functional.
 public enum Membership {
     /// Convert a UID to a corresponding UUID.
     /// This call will always succeed and may return a synthesized
@@ -31,7 +32,6 @@ public enum Membership {
     /// UUID can be used for any operation including ACL and SACL
     /// memberships, even if a UUID is later assigned to the user
     /// record.
-    
     public static func uidToUUID(_ uid: uid_t) -> UUID {
         var uuid = UUID.zero.uuid
         mbr_uid_to_uuid(uid, &uuid)
@@ -59,7 +59,7 @@ public enum Membership {
         try checkStatus(mbr_sid_to_uuid(&sid, &uuid))
         return UUID(uuid: uuid)
     }
-
+    
     /// Resolves a UUID to a corresponding ID and type.
     /// It will resolve a UUID to a corresponding GID or UID and return
     /// the type of ID (`ID_TYPE_UID` or `ID_TYPE_GID`).
@@ -73,7 +73,7 @@ public enum Membership {
         try checkStatus(mbr_uuid_to_id(&uuid, &id, &idType))
         return (id, .init(rawValue: idType))
     }
-
+    
     /// Resolves a UUID to a corresponding SID.
     public static func uuidToSID(_ uuid: UUID) throws -> nt_sid_t {
         var sid = nt_sid_t()
@@ -81,7 +81,7 @@ public enum Membership {
         try checkStatus(mbr_uuid_to_sid(&uuid, &sid))
         return sid
     }
-
+    
     /// Convert a SID to a corresponding character string representation.
     /// For use in situations where an external representation of a SID is required.
     public static func sidToString(_ sid: nt_sid_t) throws -> String {
@@ -92,15 +92,15 @@ public enum Membership {
             return String(cString: ptr)
         }
     }
-
+    
     /// Convert a character string representation of a sid to an `nt_sid_t` value.
-        /// For converting an external representation of a sid.
+    /// For converting an external representation of a sid.
     public static func stringToSID(_ string: String) throws -> nt_sid_t {
         var sid = nt_sid_t()
         try checkStatus(string.withCString { mbr_string_to_sid($0, &sid) })
         return sid
     }
-
+    
     /// Checks if a user is a member of a group.
     /// Will check if a user is a member of a group either through
     /// direct membership or via nested group membership.
@@ -118,7 +118,7 @@ public enum Membership {
     public static func checkMembership(user: uid_t, group: uid_t) throws -> Bool {
         try checkMembership(user: uidToUUID(user), group: gidToUUID(group))
     }
-
+    
     /// Checks if a user is part of a service group.
     /// Will check if a user is a member of a service access group.
     /// The servicename provided will be automatically prefixed with
