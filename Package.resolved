@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "swiftspellbook",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Alkenso/SwiftSpellbook.git",
+      "state" : {
+        "revision" : "75b62abd7212cad32805bb0b35df5d963a8c1ebf",
+        "version" : "0.3.6"
+      }
+    }
+  ],
+  "version" : 2
+}
