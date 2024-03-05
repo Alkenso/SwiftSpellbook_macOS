@@ -22,20 +22,20 @@
 
 import AppKit
 
-extension CGRect {
+extension NSScreen {
     /// Converts rect between bottom-left and upper-left coordinate systems.
     ///
     /// macOS usually operates in two coordinate systems: Cocoa (0;0 at bottom-left) and
     /// Quartz/CoreGraphics (0;0 at upper-left).
     /// This method converts the coordinates between these coordinate systems using NSScreen.screens.first
     /// as the coordinate system basis.
-    /// - Note: the method makes no coversion if there is no available displays in the system (all monitors disconnected).
-    public var invertedCoordinates: CGRect {
-        guard let screen = NSScreen.screens.first else { return self }
-        return invertCoordinates(height: screen.frame.height)
+    public func invertY(for rect: CGRect) -> CGRect {
+        rect.invertedY(height: frame.height)
     }
-    
-    internal func invertCoordinates(height: CGFloat) -> CGRect {
+}
+
+extension CGRect {
+    public func invertedY(height: CGFloat) -> CGRect {
         CGRect(x: origin.x, y: height - (origin.y + size.height), width: size.width, height: size.height)
     }
 }
