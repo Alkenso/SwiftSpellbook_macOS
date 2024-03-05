@@ -12,7 +12,7 @@ let package = Package(
         .library(name: "Spellbook_macOS", targets: ["Spellbook_macOS"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Alkenso/SwiftSpellbook.git", from: "0.3.6"),
+        .package(url: "https://github.com/Alkenso/SwiftSpellbook.git", from: "0.4.0"),
     ],
     targets: [
         .target(
