@@ -61,7 +61,7 @@ extension FileManager {
     }
 }
 
-public struct ACL: Equatable {
+public struct ACL: Equatable, Codable {
     public var entries: [ACLEntry]
     
     public init(entries: [ACLEntry] = []) {
@@ -125,7 +125,7 @@ extension ACL {
     }
 }
 
-public struct ACLQualifier: Equatable {
+public struct ACLQualifier: Equatable, Codable {
     public var id: id_t
     public var type: MBRIDType
     
@@ -140,7 +140,7 @@ extension ACLQualifier {
     public static func gid(_ gid: gid_t) -> Self { .init(id: gid, type: .gid) }
 }
 
-public struct ACLEntry: Equatable {
+public struct ACLEntry: Equatable, Codable {
     public var tag: ACLTag
     public var permset: ACLPerm
     public var qualifier: ACLQualifier
@@ -215,7 +215,7 @@ extension ACLEntry {
 
 extension acl_tag_t: BridgedCEnum {}
 
-public struct ACLTag: _ACLValue, OptionSet {
+public struct ACLTag: _ACLValue, OptionSet, Codable {
     public typealias ACLType = acl_tag_t
     
     public var rawValue: UInt32
@@ -239,7 +239,7 @@ extension ACLTag: CustomStringConvertible {
 
 extension acl_perm_t: BridgedCEnum {}
 
-public struct ACLPerm: _ACLValue, OptionSet {
+public struct ACLPerm: _ACLValue, OptionSet, Codable {
     public typealias ACLType = acl_perm_t
     
     public var rawValue: UInt32
@@ -293,7 +293,7 @@ extension ACLPerm: CustomStringConvertible {
 
 extension acl_flag_t: BridgedCEnum {}
 
-public struct ACLFlag: _ACLValue, OptionSet {
+public struct ACLFlag: _ACLValue, OptionSet, Codable {
     public typealias ACLType = acl_flag_t
     
     public var rawValue: UInt32
