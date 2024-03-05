@@ -21,7 +21,7 @@
 //  SOFTWARE.
 
 import Foundation
-@_implementationOnly import Spellbook_macOS.ObjC
+@_implementationOnly import _Spellbook_macOSObjC
 
 /// Swift wrapper around `membership.h` functional.
 public enum Membership {

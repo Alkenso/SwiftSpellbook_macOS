@@ -20,13 +20,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //  SOFTWARE.
 
-//module Spellbook_macOSObjC {
-//    header "shim.h"
-//    export *
-//}
-module Spellbook_macOS {}
-
-explicit module Spellbook_macOS.ObjC [system] [extern_c] {
+module _Spellbook_macOSObjC [system] [extern_c] {
     header "shim.h"
     export *
 }
