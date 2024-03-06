@@ -62,45 +62,203 @@ extension FileManager {
 }
 
 public struct ACL: Equatable, Codable {
-    public var entries: [ACLEntry]
+    public var entries: [Entry]
     
-    public init(entries: [ACLEntry] = []) {
+    public init(entries: [Entry] = []) {
         self.entries = entries
     }
 }
 
 extension ACL {
     public init(acl: acl_t) throws {
-        let entries = Bridge(native: acl).entries()
-        self.init(entries: try entries.map(ACLEntry.init(native:)))
+        let entries = Native(native: acl).entries()
+        self.init(entries: try entries.map(Entry.init(raw:)))
     }
     
     public func toNative() throws -> acl_t {
-        var bridge = try Bridge(count: entries.count)
+        var native = try Native(count: entries.count)
         try entries.forEach {
-            let nativeEntry = try bridge.createEntry()
+            let nativeEntry = try native.createEntry()
             try $0.apply(to: nativeEntry)
         }
         
-        return bridge.native
+        return native.raw
+    }
+}
+
+extension ACL {
+    public struct Entry: Equatable, Codable {
+        public var tag: ACL.Tag
+        public var permissions: ACL.Permissions
+        public var qualifier: ACL.Qualifier
+        public var flags: Set<ACL.Flags>
+        
+        public init(tag: ACL.Tag, permset: ACL.Permissions, qualifier: ACL.Qualifier, flags: Set<ACL.Flags> = []) {
+            self.tag = tag
+            self.permissions = permset
+            self.qualifier = qualifier
+            self.flags = flags
+        }
+    }
+}
+
+extension ACL.Entry {
+    public init(raw: acl_entry_t) throws {
+        let native = Native(raw: raw)
+        self.tag = try native.tag()
+        self.permissions = try native.permset()
+        self.qualifier = try native.qualifier()
+        self.flags = try native.flags()
     }
     
-    public struct Bridge {
-        public var native: acl_t
+    public func apply(to raw: acl_entry_t) throws {
+        let native = Native(raw: raw)
+        try native.setTag(tag)
+        try native.setPermset(permissions)
+        try native.setQualifier(qualifier.id, type: qualifier.type)
+        try native.setFlags(flags)
+    }
+}
+
+extension ACL {
+    public struct Qualifier: Equatable, Codable {
+        public var id: id_t
+        public var type: Membership.IDType
+        
+        public init(id: id_t, type: Membership.IDType) {
+            self.id = id
+            self.type = type
+        }
+    }
+}
+
+extension ACL.Qualifier {
+    public static func uid(_ uid: uid_t) -> Self { .init(id: uid, type: .uid) }
+    public static func gid(_ gid: gid_t) -> Self { .init(id: gid, type: .gid) }
+}
+
+extension acl_tag_t: BridgedCEnum {}
+
+extension ACL {
+    public struct Tag: _ACLValue, Hashable, Codable {
+        public typealias ACLType = acl_tag_t
+        
+        public var rawValue: UInt32
+        public init(rawValue: UInt32) { self.rawValue = rawValue }
+        
+        public static let undefined = Self(native: ACL_UNDEFINED_TAG)
+        public static let extendedAllow = Self(native: ACL_EXTENDED_ALLOW)
+        public static let extendedDeny = Self(native: ACL_EXTENDED_DENY)
+    }
+}
+
+extension ACL.Tag: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .undefined: "ACL_UNDEFINED_TAG"
+        case .extendedAllow: "ACL_EXTENDED_ALLOW"
+        case .extendedDeny: "ACL_EXTENDED_DENY"
+        default: "UNKNOWN(\(rawValue))"
+        }
+    }
+}
+
+extension acl_perm_t: BridgedCEnum {}
+
+extension ACL {
+    public struct Permissions: _ACLValue, OptionSet, Codable {
+        public typealias ACLType = acl_perm_t
+        
+        public var rawValue: UInt32
+        public init(rawValue: UInt32) { self.rawValue = rawValue }
+        
+        public static let readData = Self(native: ACL_READ_DATA)
+        public static let listDirectory = Self(native: ACL_LIST_DIRECTORY)
+        public static let writeData = Self(native: ACL_WRITE_DATA)
+        public static let addFile = Self(native: ACL_ADD_FILE)
+        public static let execute = Self(native: ACL_EXECUTE)
+        public static let search = Self(native: ACL_SEARCH)
+        public static let delete = Self(native: ACL_DELETE)
+        public static let appendData = Self(native: ACL_APPEND_DATA)
+        public static let addSubdirectory = Self(native: ACL_ADD_SUBDIRECTORY)
+        public static let deleteChild = Self(native: ACL_DELETE_CHILD)
+        public static let readAttributes = Self(native: ACL_READ_ATTRIBUTES)
+        public static let writeAttributes = Self(native: ACL_WRITE_ATTRIBUTES)
+        public static let readExtattributes = Self(native: ACL_READ_EXTATTRIBUTES)
+        public static let writeExtattributes = Self(native: ACL_WRITE_EXTATTRIBUTES)
+        public static let readSecurity = Self(native: ACL_READ_SECURITY)
+        public static let writeSecurity = Self(native: ACL_WRITE_SECURITY)
+        public static let changeOwner = Self(native: ACL_CHANGE_OWNER)
+        public static let synchronize = Self(native: ACL_SYNCHRONIZE)
+    }
+}
+
+extension acl_flag_t: BridgedCEnum {}
+
+extension ACL {
+    public struct Flags: _ACLValue, Hashable, Codable {
+        public typealias ACLType = acl_flag_t
+        
+        public var rawValue: UInt32
+        public init(rawValue: UInt32) { self.rawValue = rawValue }
+        
+        public static let entryInherited = Self(native: ACL_ENTRY_INHERITED)
+        public static let entryFileInherit = Self(native: ACL_ENTRY_FILE_INHERIT)
+        public static let entryDirectoryInherit = Self(native: ACL_ENTRY_DIRECTORY_INHERIT)
+        public static let entryLimitInherit = Self(native: ACL_ENTRY_LIMIT_INHERIT)
+        public static let entryOnlyInherit = Self(native: ACL_ENTRY_ONLY_INHERIT)
+    }
+}
+
+extension ACL.Flags {
+    public static func create(native: acl_flagset_t) -> Set<Self> {
+        let allCases: [Self] = [
+            .entryInherited,
+            .entryFileInherit,
+            .entryDirectoryInherit,
+            .entryLimitInherit,
+            .entryOnlyInherit,
+        ]
+        return allCases.reduce(into: []) {
+            if acl_get_flag_np(native, $1.native) != 0 {
+                $0.insert($1)
+            }
+        }
+    }
+}
+
+extension ACL.Flags: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .entryInherited: "ACL_ENTRY_INHERITED"
+        case .entryFileInherit: "ACL_ENTRY_FILE_INHERIT"
+        case .entryDirectoryInherit: "ACL_ENTRY_DIRECTORY_INHERIT"
+        case .entryLimitInherit: "ACL_ENTRY_LIMIT_INHERIT"
+        case .entryOnlyInherit: "ACL_ENTRY_ONLY_INHERIT"
+        default: "UNKNOWN(\(rawValue))"
+        }
+    }
+}
+
+// MARK: - Native
+
+extension ACL {
+    public struct Native {
+        public var raw: acl_t
         
         public init(native: acl_t) {
-            self.native = native
+            self.raw = native
         }
         
         public init(count: Int) throws {
-            self.native = try NSError.posix.try { acl_init(Int32(count)) }
+            self.raw = try NSError.posix.try { acl_init(Int32(count)) }
         }
         
         public func entries() -> [acl_entry_t] {
             var entries: [acl_entry_t] = []
             var entryID = ACL_FIRST_ENTRY
             var entry: acl_entry_t!
-            while(acl_get_entry(native, entryID.rawValue, &entry) == 0) {
+            while(acl_get_entry(raw, entryID.rawValue, &entry) == 0) {
                 entries.append(entry)
                 entryID = ACL_NEXT_ENTRY
             }
@@ -111,92 +269,47 @@ extension ACL {
         /// `ACL_LAST_ENTRY` the behaviour of any `ACLEntry` previously obtained
         ///  from the ACL by `createEntry` or `listEntries` is undefined.
         public mutating func createEntry(index: Int? = nil) throws -> acl_entry_t {
-            var acl: acl_t! = native
+            var acl: acl_t! = raw
             var entry: acl_entry_t!
             try checkStatus(acl_create_entry_np(&acl, &entry, index.flatMap(Int32.init) ?? ACL_LAST_ENTRY.rawValue))
-            native = acl
+            raw = acl
             
             return entry
         }
         
         public func removeEntry(_ entry: acl_entry_t) throws {
-            try checkStatus(acl_delete_entry(native, entry))
+            try checkStatus(acl_delete_entry(raw, entry))
         }
     }
 }
 
-public struct ACLQualifier: Equatable, Codable {
-    public var id: id_t
-    public var type: Membership.IDType
-    
-    public init(id: id_t, type: Membership.IDType) {
-        self.id = id
-        self.type = type
-    }
-}
-
-extension ACLQualifier {
-    public static func uid(_ uid: uid_t) -> Self { .init(id: uid, type: .uid) }
-    public static func gid(_ gid: gid_t) -> Self { .init(id: gid, type: .gid) }
-}
-
-public struct ACLEntry: Equatable, Codable {
-    public var tag: ACLTag
-    public var permissions: ACLPermissions
-    public var qualifier: ACLQualifier
-    public var flags: Set<ACLFlags>
-    
-    public init(tag: ACLTag, permset: ACLPermissions, qualifier: ACLQualifier, flags: Set<ACLFlags> = []) {
-        self.tag = tag
-        self.permissions = permset
-        self.qualifier = qualifier
-        self.flags = flags
-    }
-}
-
-extension ACLEntry {
-    public init(native: acl_entry_t) throws {
-        let bridge = Bridge(native: native)
-        self.tag = try bridge.tag()
-        self.permissions = try bridge.permset()
-        self.qualifier = try bridge.qualifier()
-        self.flags = try bridge.flags()
-    }
-    
-    public func apply(to native: acl_entry_t) throws {
-        let bridge = Bridge(native: native)
-        try bridge.setTag(tag)
-        try bridge.setPermset(permissions)
-        try bridge.setQualifier(qualifier.id, type: qualifier.type)
-        try bridge.setFlags(flags)
-    }
-    
-    public struct Bridge {
-        public let native: acl_entry_t
-        public init(native: acl_entry_t) { self.native = native }
+extension ACL.Entry {
+    public struct Native {
+        public let raw: acl_entry_t
+        public init(raw: acl_entry_t) { self.raw = raw }
         
-        public func tag() throws -> ACLTag {
+        public func tag() throws -> ACL.Tag {
             var tag = ACL_UNDEFINED_TAG
-            try checkStatus(acl_get_tag_type(native, &tag))
+            try checkStatus(acl_get_tag_type(raw, &tag))
             return .init(native: tag)
         }
         
-        public func setTag(_ tag: ACLTag) throws {
-            try checkStatus(acl_set_tag_type(native, tag.native))
+        public func setTag(_ tag: ACL.Tag) throws {
+            try checkStatus(acl_set_tag_type(raw, tag.native))
         }
         
-        public func permset() throws -> ACLPermissions {
+        public func permset() throws -> ACL.Permissions {
             var mask = acl_permset_mask_t()
-            try checkStatus(acl_get_permset_mask_np(native, &mask))
-            return ACLPermissions(rawValue: UInt32(mask))
+            try checkStatus(acl_get_permset_mask_np(raw, &mask))
+            return ACL.Permissions(rawValue: UInt32(mask))
         }
         
-        public func setPermset(_ set: ACLPermissions) throws {
-            try checkStatus(acl_set_permset_mask_np(native, acl_permset_mask_t(set.rawValue)))
+        public func setPermset(_ set: ACL.Permissions) throws {
+            try checkStatus(acl_set_permset_mask_np(raw, acl_permset_mask_t(set.rawValue)))
         }
         
-        public func qualifier() throws -> ACLQualifier {
-            let ptr = try NSError.posix.try { acl_get_qualifier(native) }
+        public func qualifier() throws -> ACL.Qualifier {
+            let ptr = try NSError.posix.try { acl_get_qualifier(raw) }
             defer { acl_free(ptr) }
             
             let uuid = UUID(uuid: ptr.bindMemory(to: uuid_t.self, capacity: 1).pointee)
@@ -212,155 +325,28 @@ extension ACLEntry {
             }
             
             var rawUUID = uuid.uuid
-            try checkStatus(acl_set_qualifier(native, &rawUUID))
+            try checkStatus(acl_set_qualifier(raw, &rawUUID))
         }
         
-        public func flags() throws -> Set<ACLFlags> {
+        public func flags() throws -> Set<ACL.Flags> {
             var flags: acl_flagset_t!
-            try checkStatus(acl_get_flagset_np(.init(native), &flags))
-            return ACLFlags.create(native: flags)
+            try checkStatus(acl_get_flagset_np(.init(raw), &flags))
+            return ACL.Flags.create(native: flags)
         }
         
-        public func setFlags(_ flags: Set<ACLFlags>) throws {
+        public func setFlags(_ flags: Set<ACL.Flags>) throws {
             var flagset: acl_flagset_t!
-            try checkStatus(acl_get_flagset_np(.init(native), &flagset))
+            try checkStatus(acl_get_flagset_np(.init(raw), &flagset))
             try checkStatus(acl_clear_flags_np(flagset))
             
             flags.forEach { acl_add_flag_np(flagset, $0.native) }
             
-            try checkStatus(acl_set_flagset_np(.init(native), flagset))
+            try checkStatus(acl_set_flagset_np(.init(raw), flagset))
         }
     }
 }
 
-extension acl_tag_t: BridgedCEnum {}
-
-public struct ACLTag: _ACLValue, Hashable, Codable {
-    public typealias ACLType = acl_tag_t
-    
-    public var rawValue: UInt32
-    public init(rawValue: UInt32) { self.rawValue = rawValue }
-    
-    public static let undefined = Self(native: ACL_UNDEFINED_TAG)
-    public static let extendedAllow = Self(native: ACL_EXTENDED_ALLOW)
-    public static let extendedDeny = Self(native: ACL_EXTENDED_DENY)
-}
-
-extension ACLTag: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .undefined: "ACL_UNDEFINED_TAG"
-        case .extendedAllow: "ACL_EXTENDED_ALLOW"
-        case .extendedDeny: "ACL_EXTENDED_DENY"
-        default: "UNKNOWN(\(rawValue)"
-        }
-    }
-}
-
-extension acl_perm_t: BridgedCEnum {}
-
-public struct ACLPermissions: _ACLValue, OptionSet, Codable {
-    public typealias ACLType = acl_perm_t
-    
-    public var rawValue: UInt32
-    public init(rawValue: UInt32) { self.rawValue = rawValue }
-    
-    public static let readData = ACLPermissions(native: ACL_READ_DATA)
-    public static let listDirectory = ACLPermissions(native: ACL_LIST_DIRECTORY)
-    public static let writeData = ACLPermissions(native: ACL_WRITE_DATA)
-    public static let addFile = ACLPermissions(native: ACL_ADD_FILE)
-    public static let execute = ACLPermissions(native: ACL_EXECUTE)
-    public static let search = ACLPermissions(native: ACL_SEARCH)
-    public static let delete = ACLPermissions(native: ACL_DELETE)
-    public static let appendData = ACLPermissions(native: ACL_APPEND_DATA)
-    public static let addSubdirectory = ACLPermissions(native: ACL_ADD_SUBDIRECTORY)
-    public static let deleteChild = ACLPermissions(native: ACL_DELETE_CHILD)
-    public static let readAttributes = ACLPermissions(native: ACL_READ_ATTRIBUTES)
-    public static let writeAttributes = ACLPermissions(native: ACL_WRITE_ATTRIBUTES)
-    public static let readExtattributes = ACLPermissions(native: ACL_READ_EXTATTRIBUTES)
-    public static let writeExtattributes = ACLPermissions(native: ACL_WRITE_EXTATTRIBUTES)
-    public static let readSecurity = ACLPermissions(native: ACL_READ_SECURITY)
-    public static let writeSecurity = ACLPermissions(native: ACL_WRITE_SECURITY)
-    public static let changeOwner = ACLPermissions(native: ACL_CHANGE_OWNER)
-    public static let synchronize = ACLPermissions(native: ACL_SYNCHRONIZE)
-}
-
-extension ACLPermissions: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .readData: "ACL_READ_DATA"
-        case .listDirectory: "ACL_LIST_DIRECTORY"
-        case .writeData: "ACL_WRITE_DATA"
-        case .addFile: "ACL_ADD_FILE"
-        case .execute: "ACL_EXECUTE"
-        case .search: "ACL_SEARCH"
-        case .delete: "ACL_DELETE"
-        case .appendData: "ACL_APPEND_DATA"
-        case .addSubdirectory: "ACL_ADD_SUBDIRECTORY"
-        case .deleteChild: "ACL_DELETE_CHILD"
-        case .readAttributes: "ACL_READ_ATTRIBUTES"
-        case .writeAttributes: "ACL_WRITE_ATTRIBUTES"
-        case .readExtattributes: "ACL_READ_EXTATTRIBUTES"
-        case .writeExtattributes: "ACL_WRITE_EXTATTRIBUTES"
-        case .readSecurity: "ACL_READ_SECURITY"
-        case .writeSecurity: "ACL_WRITE_SECURITY"
-        case .changeOwner: "ACL_CHANGE_OWNER"
-        case .synchronize: "ACL_SYNCHRONIZE"
-        default: "UNKNOWN(\(rawValue)"
-        }
-    }
-}
-
-extension acl_flag_t: BridgedCEnum {}
-
-public struct ACLFlags: _ACLValue, Hashable, Codable {
-    public typealias ACLType = acl_flag_t
-    
-    public var rawValue: UInt32
-    public init(rawValue: UInt32) { self.rawValue = rawValue }
-    
-    public static let entryInherited = ACLFlags(native: ACL_ENTRY_INHERITED)
-    public static let entryFileInherit = ACLFlags(native: ACL_ENTRY_FILE_INHERIT)
-    public static let entryDirectoryInherit = ACLFlags(native: ACL_ENTRY_DIRECTORY_INHERIT)
-    public static let entryLimitInherit = ACLFlags(native: ACL_ENTRY_LIMIT_INHERIT)
-    public static let entryOnlyInherit = ACLFlags(native: ACL_ENTRY_ONLY_INHERIT)
-}
-
-extension ACLFlags {
-    public static func create(native: acl_flagset_t) -> Set<ACLFlags> {
-        let allCases: [ACLFlags] = [
-            .entryInherited,
-            .entryFileInherit,
-            .entryDirectoryInherit,
-            .entryLimitInherit,
-            .entryOnlyInherit,
-        ]
-        return allCases.reduce(into: []) {
-            if acl_get_flag_np(native, $1.native) != 0 {
-                $0.insert($1)
-            }
-        }
-    }
-}
-
-extension ACLFlags: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .entryInherited: "ACL_ENTRY_INHERITED"
-        case .entryFileInherit: "ACL_ENTRY_FILE_INHERIT"
-        case .entryDirectoryInherit: "ACL_ENTRY_DIRECTORY_INHERIT"
-        case .entryLimitInherit: "ACL_ENTRY_LIMIT_INHERIT"
-        case .entryOnlyInherit: "ACL_ENTRY_ONLY_INHERIT"
-        default: "UNKNOWN(\(rawValue)"
-        }
-    }
-}
-
-public protocol BridgedCEnum: RawRepresentable where RawValue == UInt32 {
-    init(_ rawValue: RawValue)
-    init(rawValue: RawValue)
-    var rawValue: RawValue { get set }
-}
+// MARK: - Private
 
 public protocol _ACLValue: RawRepresentable where ACLType.RawValue == RawValue {
     associatedtype ACLType: BridgedCEnum

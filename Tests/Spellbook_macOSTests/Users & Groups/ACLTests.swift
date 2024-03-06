@@ -24,7 +24,7 @@ class ACLTests: XCTestCase {
         XCTAssertThrowsError(try fm.acl(atPath: "/foo/nonexistent"))
         
         let acl = ACL(entries: [
-            ACLEntry(tag: .extendedAllow, permset: .addFile, qualifier: .uid(getuid()))
+            ACL.Entry(tag: .extendedAllow, permset: .addFile, qualifier: .uid(getuid()))
         ])
         try fm.setACL(acl, atPath: path)
         XCTAssertNoThrow(try fm.acl(atPath: path))
