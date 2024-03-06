@@ -66,12 +66,22 @@ public enum Membership {
     /// Synthesized UUID values will be directly translated to corresponding ID.
     /// A UID will always be returned even if the UUID is not found.
     /// The returned ID is not persistent, but can be used to map back to the UUID during runtime.
-    public static func uuidToID(_ uuid: UUID) throws -> (id_t, type: MBRIDType) {
+    public static func uuidToID(_ uuid: UUID) throws -> (id_t, type: IDType) {
         var id = id_t()
         var idType = Int32()
         var uuid = uuid.uuid
         try checkStatus(mbr_uuid_to_id(&uuid, &id, &idType))
         return (id, .init(rawValue: idType))
+    }
+    
+    /// Resolves various identifiers to corresponding UUID.
+    /// It will resolve various identifiers such as X.509 Distinguished
+    /// Names, Kerberos ID or other forms of security identifiers to a
+    /// corresponding UUID.
+    public static func identifierToUUID(_ identifier: UnsafeRawBufferPointer, ofType type: IDType) throws -> UUID {
+        var uuid = UUID.zero.uuid
+        try checkStatus(mbr_identifier_to_uuid(type.rawValue, identifier.baseAddress, identifier.count, &uuid))
+        return UUID(uuid: uuid)
     }
     
     /// Resolves a UUID to a corresponding SID.
@@ -139,48 +149,50 @@ public enum Membership {
     }
 }
 
-public struct MBRIDType: RawRepresentable, Hashable, Codable {
-    public var rawValue: Int32
-    public init(rawValue: Int32) { self.rawValue = rawValue }
-    
-    /// Of type uid_t.
-    public static let uid = Self(rawValue: ID_TYPE_UID)
-    
-    /// Of type gid_t.
-    public static let gid = Self(rawValue: ID_TYPE_GID)
-    
-    /// Of type ntsid_t.
-    public static let sid = Self(rawValue: ID_TYPE_SID)
-    
-    /// A NULL terminated UTF8 string.
-    public static let username = Self(rawValue: ID_TYPE_USERNAME)
-    
-    /// A NULL terminated UTF8 string.
-    public static let groupName = Self(rawValue: ID_TYPE_GROUPNAME)
-    
-    /// is of type uuid_t.
-    public static let uuid = Self(rawValue: ID_TYPE_UUID)
-    
-    /// A NULL terminated UTF8 string.
-    public static let groupNFS = Self(rawValue: ID_TYPE_GROUP_NFS)
-    
-    /// A NULL terminated UTF8 string.
-    public static let userNFS = Self(rawValue: ID_TYPE_USER_NFS)
-    
-    /// A gss exported name.
-    public static let gssExportName = Self(rawValue: ID_TYPE_GSS_EXPORT_NAME)
-    
-    /// A NULL terminated string representation of the X.509 certificate identity
-    /// with the format of: `<I>DN of the Certificate authority<S>DN of the holder`.
-    /// Example: `<I>DC=com,DC=example,CN=CertificatAuthority<S>DC=com,DC=example,CN=username`.
-    public static let x509DN = Self(rawValue: ID_TYPE_X509_DN)
-    
-    /// A NULL terminated string representation of a Kerberos principal
-    /// in the form of `user\@REALM` representing a typical Kerberos principal.
-    public static let kerberos = Self(rawValue: ID_TYPE_KERBEROS)
+extension Membership {
+    public struct IDType: RawRepresentable, Hashable, Codable {
+        public var rawValue: Int32
+        public init(rawValue: Int32) { self.rawValue = rawValue }
+        
+        /// Of type uid_t.
+        public static let uid = Self(rawValue: ID_TYPE_UID)
+        
+        /// Of type gid_t.
+        public static let gid = Self(rawValue: ID_TYPE_GID)
+        
+        /// Of type ntsid_t.
+        public static let sid = Self(rawValue: ID_TYPE_SID)
+        
+        /// A NULL terminated UTF8 string.
+        public static let username = Self(rawValue: ID_TYPE_USERNAME)
+        
+        /// A NULL terminated UTF8 string.
+        public static let groupName = Self(rawValue: ID_TYPE_GROUPNAME)
+        
+        /// is of type uuid_t.
+        public static let uuid = Self(rawValue: ID_TYPE_UUID)
+        
+        /// A NULL terminated UTF8 string.
+        public static let groupNFS = Self(rawValue: ID_TYPE_GROUP_NFS)
+        
+        /// A NULL terminated UTF8 string.
+        public static let userNFS = Self(rawValue: ID_TYPE_USER_NFS)
+        
+        /// A gss exported name.
+        public static let gssExportName = Self(rawValue: ID_TYPE_GSS_EXPORT_NAME)
+        
+        /// A NULL terminated string representation of the X.509 certificate identity
+        /// with the format of: `<I>DN of the Certificate authority<S>DN of the holder`.
+        /// Example: `<I>DC=com,DC=example,CN=CertificatAuthority<S>DC=com,DC=example,CN=username`.
+        public static let x509DN = Self(rawValue: ID_TYPE_X509_DN)
+        
+        /// A NULL terminated string representation of a Kerberos principal
+        /// in the form of `user\@REALM` representing a typical Kerberos principal.
+        public static let kerberos = Self(rawValue: ID_TYPE_KERBEROS)
+    }
 }
 
-extension MBRIDType: CustomStringConvertible {
+extension Membership.IDType: CustomStringConvertible {
     public var description: String {
         switch self {
         case .uid: "ID_TYPE_UID"
