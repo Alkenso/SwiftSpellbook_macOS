@@ -1,12 +1,12 @@
 import SpellbookMac
 
-import SpellbookTestUtils
+import SpellbookFoundation
 import XCTest
 
 private let fm = FileManager.default
 
 class ACLTests: XCTestCase {
-    let tmpRoot = TestTemporaryDirectory(prefix: "ACLTests")
+    let tmpRoot = TemporaryDirectory.bundle.directory(prefix: "ACLTests")
     
     override func setUpWithError() throws {
         try super.setUpWithError()
@@ -19,7 +19,7 @@ class ACLTests: XCTestCase {
     }
     
     func test() throws {
-        let path = tmpRoot.url.path
+        let path = tmpRoot.location.path
         XCTAssertThrowsError(try FileManager.default.acl(atPath: path))
         XCTAssertThrowsError(try fm.acl(atPath: "/foo/nonexistent"))
         

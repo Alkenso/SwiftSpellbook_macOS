@@ -202,11 +202,11 @@ extension XPCConnection {
     }
     
     private func registerInStorage() {
-        _currentConnectionStorage.writeAsync { $0[ObjectIdentifier(self.native)] = Weak(self) }
+        _currentConnectionStorage.write { $0[ObjectIdentifier(self.native)] = Weak(self) }
     }
     
     private func unregisterFromStorage() {
-        _currentConnectionStorage.writeAsync { [id = ObjectIdentifier(native)] in $0.removeValue(forKey: id) }
+        _currentConnectionStorage.write { [id = ObjectIdentifier(native)] in _ = $0.removeValue(forKey: id) }
     }
 }
 

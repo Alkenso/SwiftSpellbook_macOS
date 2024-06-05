@@ -250,7 +250,7 @@ private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol {
         do {
             let encoded = try xpcEncoder.encode(process)
             let executor = SynchronousExecutor("HandlePathInterest", timeout: 5.0)
-            guard let interest = try executor({ reply in
+            guard let interest = try executor.sync({ reply in
                 DispatchQueue.global().async { self.delegate.handlePathInterest(encoded, reply: reply) }
             }) else {
                 return .listen()

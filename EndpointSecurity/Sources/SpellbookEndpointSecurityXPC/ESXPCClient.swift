@@ -301,7 +301,7 @@ public final class ESXPCClient: ESClientProtocol {
         }
         
         try connectionLock.withLock {
-            try syncExecutor { callback in
+            try syncExecutor.sync { callback in
                 let proxy = try connection.remoteObjectProxy { callback($0) }
                     .get(name: "ESXPCConnection", description: "ES XPC client is not connected")
                 try body(proxy, callback)
@@ -314,7 +314,7 @@ public final class ESXPCClient: ESClientProtocol {
         body: @escaping (ESClientXPCProtocol, @escaping (Result<T, Error>) -> Void) throws -> Void
     ) throws -> T {
         try connectionLock.withLock {
-            try syncExecutor { (callback: @escaping (Result<T, Error>) -> Void) in
+            try syncExecutor.sync { (callback: @escaping (Result<T, Error>) -> Void) in
                 let proxy = try connection.remoteObjectProxy { callback(.failure($0)) }
                     .get(name: "ESXPCConnection", description: "ES XPC client is not connected")
                 try body(proxy, callback)

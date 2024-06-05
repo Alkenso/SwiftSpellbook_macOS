@@ -87,14 +87,14 @@ public class XPCTransportServer {
                 self.connectionOpened?(transport.peerInfo)
             case .invalidated:
                 self.connectionClosed?(transport.peerInfo)
-                self.connections.writeAsync { $0.removeValue(forKey: id) }
+                self.connections.write { _ = $0.removeValue(forKey: id) }
             case .connecting:
                 break
             }
         }
         prepareNewConnectionReceive?(transport)
         
-        connections.writeAsync { $0[id] = transport }
+        connections.write { $0[id] = transport }
         transport.activate()
     }
 }

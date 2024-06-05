@@ -17,7 +17,7 @@ let package = Package(
         .library(name: "SpellbookXPC", targets: ["SpellbookXPC"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Alkenso/SwiftSpellbook.git", from: "0.4.2"),
+        .package(url: "https://github.com/Alkenso/SwiftSpellbook.git", from: "1.0.0"),
     ],
     targets: [
         // MacShims.
@@ -113,6 +113,7 @@ let package = Package(
             dependencies: [
                 "SpellbookMac",
                 .product(name: "SpellbookFoundation", package: "SwiftSpellbook"),
+                .product(name: "SpellbookBinaryParsing", package: "SwiftSpellbook"),
             ],
             path: "XPC/Sources/SpellbookXPC"
         ),

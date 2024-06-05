@@ -69,7 +69,7 @@ public class XPCClient<RemoteInterface, ExportedInterface, ConnectedState> {
     
     /// Observalbe state of the connection. The value is present when connection is alive.
     /// Can be used to monitor connection state (connected/not connected).
-    public let connectedState: Observable<ConnectedState?>
+    public let connectedState: ValueObservable<ConnectedState?>
     
     // Get a proxy for the remote object (that is, the object exported from the other side of this connection).
     public func remoteObjectProxy(synchronous: Bool = false, errorHandler: ((Error) -> Void)? = nil) -> RemoteInterface {
@@ -113,7 +113,7 @@ public class XPCClient<RemoteInterface, ExportedInterface, ConnectedState> {
         
         self.queue = DispatchQueue(label: "\(Self.self).queue")
         self.connectedStateStore = infoStore
-        self.connectedState = infoStore.asObservable
+        self.connectedState = infoStore.observable
         self.connection = createConnection(.connection(.init(serviceName: "not activated connection")))
         self.createConnection = createConnection
     }
