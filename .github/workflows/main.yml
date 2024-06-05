@@ -32,5 +32,5 @@ jobs:
           set -e 
           set -o pipefail
           
-          xcodebuild test -scheme SwiftSpellbook_macOS -destination "platform=macOS" SWIFT_ACTIVE_COMPILATION_CONDITIONS="SPELLBOOK_SLOW_CI_x20" | xcpretty
+          xcodebuild test -scheme SwiftSpellbook_macOS-Package -destination "platform=macOS" SWIFT_ACTIVE_COMPILATION_CONDITIONS="SPELLBOOK_SLOW_CI_x20" | xcpretty
           
