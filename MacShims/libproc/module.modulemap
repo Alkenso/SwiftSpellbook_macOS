@@ -1,0 +1,5 @@
+module s_libproc [system] {
+    header "shim.h"
+    link "proc"
+    export *
+}
