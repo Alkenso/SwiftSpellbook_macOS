@@ -1,4 +1,5 @@
 import SpellbookXPC
+import class SpellbookXPC.XPCListener
 
 import SpellbookFoundation
 import SpellbookTestUtils
@@ -8,7 +9,7 @@ class XPCClientTests: XCTestCase {
     private typealias Client = XPCClient<TestProtocolXPC, Never, String>
     
     fileprivate static let testVersion = "1.0.2"
-    private var listener: SpellbookXPC.XPCListener<TestProtocolXPC, Never>!
+    private var listener: XPCListener<TestProtocolXPC, Never>!
     private var client: Client!
     
     override func setUp() {
