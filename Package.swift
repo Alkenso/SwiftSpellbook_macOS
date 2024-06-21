@@ -15,6 +15,10 @@ let package = Package(
         .library(name: "SpellbookHDIUtil", targets: ["SpellbookHDIUtil"]),
         .library(name: "SpellbookLaunchctl", targets: ["SpellbookLaunchctl"]),
         .library(name: "SpellbookXPC", targets: ["SpellbookXPC"]),
+        
+        .library(name: "xar", targets: ["xar"]),
+        .library(name: "membership", targets: ["membership"]),
+        .library(name: "libproc", targets: ["libproc"]),
     ],
     dependencies: [
         .package(url: "https://github.com/Alkenso/SwiftSpellbook.git", from: "1.0.0"),
