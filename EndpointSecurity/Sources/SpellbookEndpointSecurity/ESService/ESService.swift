@@ -46,34 +46,16 @@ private let log = SpellbookLogger.internalLog(.service)
 /// Suspended subscriptions would NOT receive events while they remain suspended.
 public final class ESService: ESServiceRegistering {
     private typealias Client = any ESClientProtocol
-    private let createES: (ESService) throws -> Client
+    private var createES: (ESService) throws -> Client
     private let store = ESServiceSubscriptionStore()
     private var client: Client?
     private var isActivated = false
     private var activationLock = UnfairLock()
     
-    /// Create `ESService` that internally creates and manages default-create `ESClient`.
-    public convenience init() {
-        self.init(createES: ESClient.init)
-    }
-    
-    /// Create `ESService` with factory that creates `ESClient` instances.
-    /// `ESService` will override any of created client handlers and rely on fact that
-    /// client it totally owned and managed by the Service.
-    public init<C: ESClientProtocol>(createES: @escaping (String) throws -> C) where C.Message == ESMessage {
+    /// Create `ESService` that internally creates and manages default-created `ESClient`.
+    public init() {
         self.createES = { service in
-            let client = try createES(service.clientName)
-            service.setupClient(client)
-            return client
-        }
-    }
-    
-    /// Create `ESService` with factory that creates `ESClient` instances.
-    /// `ESService` will override any of created client handlers and rely on fact that
-    /// client it totally owned and managed by the Service.
-    public init<C: ESClientProtocol>(createES: @escaping (String) throws -> C) where C.Message == ESMessagePtr {
-        self.createES = { service in
-            let client = try createES(service.clientName)
+            let client = try ESClient(service.clientName)
             service.setupClient(client)
             return client
         }
@@ -95,18 +77,40 @@ public final class ESService: ESServiceRegistering {
         setupClient(client)
     }
     
+    /// Setup `ESService` with factory that creates `ESClient` instances.
+    /// `ESService` will override any of created client handlers and rely on fact that
+    /// client it totally owned and managed by the Service.
+    public func setClientFactory<C: ESClientProtocol>(createES: @escaping (String) throws -> C) where C.Message == ESMessage {
+        self.createES = { service in
+            let client = try createES(service.clientName)
+            service.setupClient(client)
+            return client
+        }
+    }
+    
+    /// Setup `ESService` with factory that creates `ESClient` instances.
+    /// `ESService` will override any of created client handlers and rely on fact that
+    /// client it totally owned and managed by the Service.
+    public func setClientFactory<C: ESClientProtocol>(createES: @escaping (String) throws -> C) where C.Message == ESMessagePtr {
+        self.createES = { service in
+            let client = try createES(service.clientName)
+            service.setupClient(client)
+            return client
+        }
+    }
+    
     private var clientName: String { "ESService_\(ObjectIdentifier(self))" }
     
     private func setupClient<C: ESClientProtocol>(_ client: C) where C.Message == ESMessage {
         client.authMessageHandler = store.handleAuthMessage
         client.notifyMessageHandler = store.handleNotifyMessage
-        return setupAnyClient(client)
+        setupAnyClient(client)
     }
     
     private func setupClient<C: ESClientProtocol>(_ client: C) where C.Message == ESMessagePtr {
         client.authMessageHandler = store.handleAuthMessage
         client.notifyMessageHandler = store.handleNotifyMessage
-        return setupAnyClient(client)
+        setupAnyClient(client)
     }
     
     private func setupAnyClient(_ client: some ESClientProtocol) {

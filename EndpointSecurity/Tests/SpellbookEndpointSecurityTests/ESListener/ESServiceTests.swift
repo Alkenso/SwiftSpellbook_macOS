@@ -9,11 +9,11 @@ import XCTest
 class ESServiceTests: XCTestCase {
     static let emitQueue = DispatchQueue(label: "ESClientTest.es_native_queue")
     var es: MockESClient!
-    var service: ESService!
+    var service = ESService()
     
     override func setUp() {
         es = MockESClient()
-        service = ESService { [es] _ in try es.get() }
+        service.setClientFactory { [es] _ in try es.get() }
     }
     
     func test() {
