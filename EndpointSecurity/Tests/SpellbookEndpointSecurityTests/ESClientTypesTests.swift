@@ -94,7 +94,7 @@ class ESClientTypesTests: XCTestCase {
             XCTAssertEqual($0, .allowOnce)
             exp.fulfill()
         }
-        (0..<count).forEach { _ in group.resolve(.allowOnce) }
+        (0..<count).forEach { group.resolve(.allowOnce, by: $0, name: "") }
         
         waitForExpectations()
     }

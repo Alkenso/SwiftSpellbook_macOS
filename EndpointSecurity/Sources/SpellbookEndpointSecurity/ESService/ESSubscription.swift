@@ -29,6 +29,9 @@ public struct ESSubscription {
     
     public init() {}
     
+    /// Custom name of subscription for log & debug purposes.
+    public var name = "ESSubscription"
+    
     /// Set of events to subscribe on.
     public var events: [es_event_type_t] = []
     

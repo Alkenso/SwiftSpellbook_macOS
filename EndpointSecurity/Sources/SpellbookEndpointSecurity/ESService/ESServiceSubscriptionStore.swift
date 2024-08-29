@@ -122,10 +122,13 @@ internal final class ESServiceSubscriptionStore {
             return
         }
         
-        let group = ESMultipleResolution(count: subscribers.count, reply: reply)
-        subscribers.forEach { entry in
+        let group = ESMultipleResolution(count: subscribers.count, completion: reply)
+        for i in 0..<subscribers.count {
+            let entry = subscribers[i]
             entry.subscription.queue.async {
-                entry.subscription.authMessageHandler(message, group.resolve)
+                entry.subscription.authMessageHandler(message) {
+                    group.resolve($0, by: i, name: entry.subscription.name)
+                }
             }
         }
     }
@@ -171,23 +174,29 @@ internal final class ESServiceSubscriptionStore {
 
 internal final class ESMultipleResolution {
     private var lock = UnfairLock()
-    private var fulfilled = 0
+    private var resolved = 0
     private var resolutions: [ESAuthResolution]
-    private let reply: (ESAuthResolution) -> Void
+    private var resolutionsState: [Bool]
+    private let completion: (ESAuthResolution) -> Void
     
-    init(count: Int, reply: @escaping (ESAuthResolution) -> Void) {
+    init(count: Int, completion: @escaping (ESAuthResolution) -> Void) {
         self.resolutions = .init(repeating: .allow, count: count)
-        self.reply = reply
+        self.resolutionsState = .init(repeating: false, count: count)
+        self.completion = completion
     }
     
-    func resolve(_ resolution: ESAuthResolution) {
+    func resolve(_ resolution: ESAuthResolution, by subscription: Int, name: String) {
         lock.withLock {
-            resolutions[fulfilled] = resolution
-            fulfilled += 1
+            guard !updateSwap(&resolutionsState[subscription], true) else {
+                log.error("Invalid multiple resolutions provided by subscription \(name)(\(subscription))", assert: true)
+                return
+            }
+            resolved += 1
+            resolutions[subscription] = resolution
             
-            if fulfilled == resolutions.count {
+            if resolved == resolutions.count {
                 let combined = ESAuthResolution.combine(resolutions)
-                reply(combined)
+                completion(combined)
             }
         }
     }
