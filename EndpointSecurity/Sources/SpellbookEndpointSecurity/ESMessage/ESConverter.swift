@@ -118,8 +118,16 @@ public extension ESConverter {
         ESThread(threadID: es.thread_id)
     }
     
-    func esThreadState(_ es: es_thread_state_t) throws -> ESThreadState {
+    func esThreadState(_ es: es_thread_state_t) -> ESThreadState {
         ESThreadState(flavor: es.flavor, state: esToken(es.state))
+    }
+    
+    func esSignedFileInfo(_ es: es_signed_file_info_t) -> ESSignedFileInfo {
+        .init(
+            cdHash: withUnsafeBytes(of: es.cdhash) { Data($0) },
+            teamID: esString(es.team_id),
+            signingID: esString(es.signing_id)
+        )
     }
     
     func esAuthResult(_ es: es_result_t) throws -> ESAuthResult {
@@ -402,7 +410,7 @@ public extension ESConverter {
         case ES_EVENT_TYPE_NOTIFY_TRACE:
             return .trace(esEvent(trace: event.trace))
         case ES_EVENT_TYPE_NOTIFY_REMOTE_THREAD_CREATE:
-            return try .remoteThreadCreate(esEvent(remote_thread_create: event.remote_thread_create))
+            return .remoteThreadCreate(esEvent(remote_thread_create: event.remote_thread_create))
         case ES_EVENT_TYPE_AUTH_REMOUNT:
             return .remount(esEvent(remount: event.remount))
         case ES_EVENT_TYPE_NOTIFY_REMOUNT:
@@ -499,6 +507,8 @@ public extension ESConverter {
             return .odDeleteGroup(esEvent(odDeleteGroup: event.od_delete_group.pointee))
         case ES_EVENT_TYPE_NOTIFY_XPC_CONNECT:
             return .xpcConnect(esEvent(xpcConnect: event.xpc_connect.pointee))
+        case ES_EVENT_TYPE_NOTIFY_GATEKEEPER_USER_OVERRIDE:
+            return try .gatekeeperUserOverride(esEvent(gatekeeperUserOverride: event.gatekeeper_user_override.pointee))
         default:
             throw CommonError.invalidArgument(arg: "es_event_type_t", invalidValue: type)
         }
@@ -697,8 +707,8 @@ public extension ESConverter {
         .init(source: esFile(es.source))
     }
     
-    func esEvent(remote_thread_create es: es_event_remote_thread_create_t) throws -> ESEvent.RemoteThreadCreate {
-        try .init(target: esProcess(es.target), threadState: es.thread_state.map(\.pointee).flatMap(esThreadState))
+    func esEvent(remote_thread_create es: es_event_remote_thread_create_t) -> ESEvent.RemoteThreadCreate {
+        .init(target: esProcess(es.target), threadState: es.thread_state.map(\.pointee).flatMap(esThreadState))
     }
     
     func esEvent(remount es: es_event_remount_t) -> ESEvent.Remount {
@@ -1214,5 +1224,22 @@ public extension ESConverter {
     
     func esEvent(xpcConnect es: es_event_xpc_connect_t) -> ESEvent.XPCConnect {
         .init(serviceName: esString(es.service_name), serviceDomainType: es.service_domain_type)
+    }
+    
+    func esEvent(gatekeeperUserOverride es: es_event_gatekeeper_user_override_t) throws -> ESEvent.GatekeeperUserOverride {
+        let file: ESEvent.GatekeeperUserOverride.File = switch es.file_type {
+        case ES_GATEKEEPER_USER_OVERRIDE_FILE_TYPE_FILE: .file(esFile(es.file.file))
+        case ES_GATEKEEPER_USER_OVERRIDE_FILE_TYPE_PATH: .path(esString(es.file.file_path))
+        default:
+            throw CommonError.invalidArgument(
+                arg: "es_gatekeeper_user_override_file_type_t",
+                invalidValue: es.file_type
+            )
+        }
+        return .init(
+            file: file,
+            sha256: es.sha256.flatMap { withUnsafeBytes(of: $0.pointee) { Data($0) } },
+            signing_info: es.signing_info.flatMap { esSignedFileInfo($0.pointee) }
+        )
     }
 }

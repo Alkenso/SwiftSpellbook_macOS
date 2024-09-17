@@ -328,6 +328,8 @@ extension es_event_type_t: SpellbookEndpointSecurity.ESNativeType {
             return "ES_EVENT_TYPE_NOTIFY_OD_DELETE_GROUP"
         case ES_EVENT_TYPE_NOTIFY_XPC_CONNECT:
             return "ES_EVENT_TYPE_NOTIFY_XPC_CONNECT"
+        case ES_EVENT_TYPE_NOTIFY_GATEKEEPER_USER_OVERRIDE:
+            return "ES_EVENT_TYPE_NOTIFY_GATEKEEPER_USER_OVERRIDE"
         default:
             return nil
         }

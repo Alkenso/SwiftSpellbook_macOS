@@ -129,6 +129,26 @@ public struct ESThreadState: Equatable, Codable {
     }
 }
 
+/// Information from a signed file. If the file is a multiarchitecture binary, only the
+/// signing information for the native host architecture is reported. I.e. the CDHash
+/// from the AArch64 slice if the host is AArch64.
+public struct ESSignedFileInfo: Equatable, Codable {
+    /// Code Directory Hash
+    public var cdHash: Data
+    
+    /// Team Identifier, if available in the signing information.
+    public var teamID: String
+    
+    /// Signing Identifier, if available in the signing information.
+    public var signingID: String
+    
+    public init(cdHash: Data, teamID: String, signingID: String) {
+        self.cdHash = cdHash
+        self.teamID = teamID
+        self.signingID = signingID
+    }
+}
+
 public struct ESAuthResult: Equatable, Codable, RawRepresentable {
     public static func auth(_ auth: Bool) -> ESAuthResult { .init(rawValue: auth ? .max : 0) }
     public static func flags(_ flags: UInt32) -> ESAuthResult { .init(rawValue: flags) }
@@ -287,6 +307,7 @@ public enum ESEvent: Equatable, Codable {
     case xpMalwareDetected(XPMalwareDetected)
     case xpMalwareRemediated(XPMalwareRemediated)
     case xpcConnect(XPCConnect)
+    case gatekeeperUserOverride(GatekeeperUserOverride)
 }
 
 public extension ESEvent {
@@ -1841,6 +1862,37 @@ public extension ESEvent {
         public init(serviceName: String, serviceDomainType: es_xpc_domain_type_t) {
             self.serviceName = serviceName
             self.serviceDomainType = serviceDomainType
+        }
+    }
+    
+    /// Notification for a gatekeeper_user_override events.
+    ///
+    /// - Note: This event type does not support caching (notify-only).
+    /// - Note: Hashes are calculated in usermode by Gatekeeper. There is no guarantee that
+    /// any other program including the kernel will observe the same file at the reported path.
+    /// Furthermore there is no guarantee that the CDHash is valid or that it matches the containing binary.
+    struct GatekeeperUserOverride: Equatable, Codable {
+        /// Describes the target file that is being overridden by the user
+        public var file: File
+        
+        /// SHA256 of the file. Provided if the filesize is less than 100MB.
+        public var sha256: Data?
+        
+        /// Signing Information, available if the file has been signed.
+        public var signing_info: ESSignedFileInfo?
+        
+        /// The type of the file field.
+        /// If Endpoint security can't lookup the file at event submission
+        /// it will emit a path instead of an `es_file_t`.
+        public enum File: Equatable, Codable {
+            case path(String)
+            case file(ESFile)
+        }
+        
+        public init(file: File, sha256: Data?, signing_info: ESSignedFileInfo?) {
+            self.file = file
+            self.sha256 = sha256
+            self.signing_info = signing_info
         }
     }
 }
