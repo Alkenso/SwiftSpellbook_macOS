@@ -33,7 +33,7 @@ extension ESNativeType {
     }
 }
 
-extension es_event_type_t: ESNativeType {
+extension es_event_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_EVENT_TYPE_AUTH_EXEC:
@@ -334,7 +334,7 @@ extension es_event_type_t: ESNativeType {
     }
 }
 
-extension es_auth_result_t: ESNativeType {
+extension es_auth_result_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_AUTH_RESULT_ALLOW:
@@ -347,7 +347,7 @@ extension es_auth_result_t: ESNativeType {
     }
 }
 
-extension es_action_type_t: ESNativeType {
+extension es_action_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_ACTION_TYPE_AUTH:
@@ -360,7 +360,7 @@ extension es_action_type_t: ESNativeType {
     }
 }
 
-extension es_result_type_t: ESNativeType {
+extension es_result_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_RESULT_TYPE_AUTH:
@@ -373,7 +373,7 @@ extension es_result_type_t: ESNativeType {
     }
 }
 
-extension es_return_t: ESNativeType {
+extension es_return_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_RETURN_SUCCESS:
@@ -386,7 +386,7 @@ extension es_return_t: ESNativeType {
     }
 }
 
-extension es_respond_result_t: ESNativeType {
+extension es_respond_result_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_RESPOND_RESULT_SUCCESS:
@@ -407,7 +407,7 @@ extension es_respond_result_t: ESNativeType {
     }
 }
 
-extension es_new_client_result_t: ESNativeType {
+extension es_new_client_result_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_NEW_CLIENT_RESULT_SUCCESS:
@@ -430,7 +430,7 @@ extension es_new_client_result_t: ESNativeType {
     }
 }
 
-extension es_clear_cache_result_t: ESNativeType {
+extension es_clear_cache_result_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_CLEAR_CACHE_RESULT_SUCCESS:
@@ -445,7 +445,7 @@ extension es_clear_cache_result_t: ESNativeType {
     }
 }
 
-extension es_proc_check_type_t: ESNativeType {
+extension es_proc_check_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_PROC_CHECK_TYPE_LISTPIDS:
@@ -474,7 +474,7 @@ extension es_proc_check_type_t: ESNativeType {
     }
 }
 
-extension es_proc_suspend_resume_type_t: ESNativeType {
+extension es_proc_suspend_resume_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_PROC_SUSPEND_RESUME_TYPE_SUSPEND:
@@ -489,7 +489,7 @@ extension es_proc_suspend_resume_type_t: ESNativeType {
     }
 }
 
-extension es_set_or_clear_t: ESNativeType {
+extension es_set_or_clear_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_SET:
@@ -502,7 +502,7 @@ extension es_set_or_clear_t: ESNativeType {
     }
 }
 
-extension es_mute_path_type_t: ESNativeType {
+extension es_mute_path_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_MUTE_PATH_TYPE_PREFIX:
@@ -519,7 +519,7 @@ extension es_mute_path_type_t: ESNativeType {
     }
 }
 
-extension es_mute_inversion_type_t: ESNativeType {
+extension es_mute_inversion_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_MUTE_INVERSION_TYPE_PROCESS:
@@ -536,7 +536,7 @@ extension es_mute_inversion_type_t: ESNativeType {
     }
 }
 
-extension es_mute_inverted_return_t: ESNativeType {
+extension es_mute_inverted_return_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_MUTE_INVERTED:
@@ -551,7 +551,7 @@ extension es_mute_inverted_return_t: ESNativeType {
     }
 }
 
-extension es_btm_item_type_t: ESNativeType {
+extension es_btm_item_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_BTM_ITEM_TYPE_USER_ITEM:
@@ -570,7 +570,7 @@ extension es_btm_item_type_t: ESNativeType {
     }
 }
 
-extension es_touchid_mode_t: ESNativeType {
+extension es_touchid_mode_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_TOUCHID_MODE_VERIFICATION:
@@ -583,7 +583,7 @@ extension es_touchid_mode_t: ESNativeType {
     }
 }
 
-extension es_auto_unlock_type_t: ESNativeType {
+extension es_auto_unlock_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_AUTO_UNLOCK_MACHINE_UNLOCK:
@@ -596,7 +596,7 @@ extension es_auto_unlock_type_t: ESNativeType {
     }
 }
 
-extension es_openssh_login_result_type_t: ESNativeType {
+extension es_openssh_login_result_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_OPENSSH_LOGIN_EXCEED_MAXTRIES:
@@ -625,7 +625,7 @@ extension es_openssh_login_result_type_t: ESNativeType {
     }
 }
 
-extension es_address_type_t: ESNativeType {
+extension es_address_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_ADDRESS_TYPE_NONE:
@@ -642,7 +642,7 @@ extension es_address_type_t: ESNativeType {
     }
 }
 
-extension es_profile_source_t: ESNativeType {
+extension es_profile_source_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_PROFILE_SOURCE_MANAGED:
@@ -655,7 +655,7 @@ extension es_profile_source_t: ESNativeType {
     }
 }
 
-extension es_sudo_plugin_type_t: ESNativeType {
+extension es_sudo_plugin_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_SUDO_PLUGIN_TYPE_UNKNOWN:
@@ -676,7 +676,7 @@ extension es_sudo_plugin_type_t: ESNativeType {
     }
 }
 
-extension es_authorization_rule_class_t: ESNativeType {
+extension es_authorization_rule_class_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_AUTHORIZATION_RULE_CLASS_USER:
@@ -699,7 +699,7 @@ extension es_authorization_rule_class_t: ESNativeType {
     }
 }
 
-extension es_od_account_type_t: ESNativeType {
+extension es_od_account_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_OD_ACCOUNT_TYPE_USER:
@@ -712,7 +712,7 @@ extension es_od_account_type_t: ESNativeType {
     }
 }
 
-extension es_od_record_type_t: ESNativeType {
+extension es_od_record_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_OD_RECORD_TYPE_USER:
@@ -725,7 +725,7 @@ extension es_od_record_type_t: ESNativeType {
     }
 }
 
-extension es_xpc_domain_type_t: ESNativeType {
+extension es_xpc_domain_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {
         case ES_XPC_DOMAIN_TYPE_SYSTEM:

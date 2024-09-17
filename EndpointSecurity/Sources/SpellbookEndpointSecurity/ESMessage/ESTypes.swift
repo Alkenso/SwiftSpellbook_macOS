@@ -317,14 +317,16 @@ public extension ESEvent {
         case autoUnlock(AutoUnlock)
         
         public struct OD: Equatable, Codable {
-            public var instigator: ESProcess
+            public var instigator: ESProcess?
+            public var instigatorToken: audit_token_t
             public var recordType: String
             public var recordName: String
             public var nodeName: String
             public var dbPath: String
             
-            public init(instigator: ESProcess, recordType: String, recordName: String, nodeName: String, dbPath: String) {
+            public init(instigator: ESProcess?, instigatorToken: audit_token_t, recordType: String, recordName: String, nodeName: String, dbPath: String) {
                 self.instigator = instigator
+                self.instigatorToken = instigatorToken
                 self.recordType = recordType
                 self.recordName = recordName
                 self.nodeName = nodeName
@@ -333,25 +335,29 @@ public extension ESEvent {
         }
         
         public struct TouchID: Equatable, Codable {
-            public var instigator: ESProcess
+            public var instigator: ESProcess?
+            public var instigatorToken: audit_token_t
             public var touchIDMode: es_touchid_mode_t
             public var uid: uid_t?
             
-            public init(instigator: ESProcess, touchIDMode: es_touchid_mode_t, uid: uid_t?) {
+            public init(instigator: ESProcess?, instigatorToken: audit_token_t, touchIDMode: es_touchid_mode_t, uid: uid_t?) {
                 self.instigator = instigator
+                self.instigatorToken = instigatorToken
                 self.touchIDMode = touchIDMode
                 self.uid = uid
             }
         }
         
         public struct Token: Equatable, Codable {
-            public var instigator: ESProcess
+            public var instigator: ESProcess?
+            public var instigatorToken: audit_token_t
             public var pubkeyHash: String
             public var tokenID: String
             public var kerberosPrincipal: String
             
-            public init(instigator: ESProcess, pubkeyHash: String, tokenID: String, kerberosPrincipal: String) {
+            public init(instigator: ESProcess?, instigatorToken: audit_token_t, pubkeyHash: String, tokenID: String, kerberosPrincipal: String) {
                 self.instigator = instigator
+                self.instigatorToken = instigatorToken
                 self.pubkeyHash = pubkeyHash
                 self.tokenID = tokenID
                 self.kerberosPrincipal = kerberosPrincipal
@@ -530,14 +536,16 @@ public extension ESEvent {
     }
     
     struct FileProviderMaterialize: Equatable, Codable {
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        public var instigatorToken: audit_token_t
         public var source: ESFile
         public var target: ESFile
         
-        public init(instigator: ESProcess, source: ESFile, target: ESFile) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, source: ESFile, target: ESFile) {
             self.instigator = instigator
             self.source = source
             self.target = target
+            self.instigatorToken = instigatorToken
         }
     }
     
@@ -824,23 +832,27 @@ public extension ESEvent {
     }
     
     struct ProfileAdd: Equatable, Codable {
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        public var instigatorToken: audit_token_t
         public var isUpdate: Bool
         public var profile: ESProfile
         
-        public init(instigator: ESProcess, isUpdate: Bool, profile: ESProfile) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, isUpdate: Bool, profile: ESProfile) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.isUpdate = isUpdate
             self.profile = profile
         }
     }
     
     struct ProfileRemove: Equatable, Codable {
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        public var instigatorToken: audit_token_t
         public var profile: ESProfile
         
-        public init(instigator: ESProcess, profile: ESProfile) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, profile: ESProfile) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.profile = profile
         }
     }
@@ -1243,7 +1255,10 @@ public extension ESEvent {
     /// Notification that a process peititioned for certain authorization rights.
     struct AuthorizationPetition: Equatable, Codable {
         /// Process that submitted the petition (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// Process that created the petition.
         public var petitioner: ESProcess?
@@ -1254,8 +1269,9 @@ public extension ESEvent {
         /// Array of string tokens, each token is the name of a right being requested.
         public var rights: [String]
         
-        public init(instigator: ESProcess, petitioner: ESProcess? = nil, flags: UInt32, rights: [String]) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, petitioner: ESProcess? = nil, flags: UInt32, rights: [String]) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.petitioner = petitioner
             self.flags = flags
             self.rights = rights
@@ -1265,7 +1281,10 @@ public extension ESEvent {
     /// Notification that a process had it's right petition judged.
     struct AuthorizationJudgement: Equatable, Codable {
         /// Process that submitted the petition (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// Process that created the petition.
         public var petitioner: ESProcess?
@@ -1277,8 +1296,9 @@ public extension ESEvent {
         /// Array of results. One for each right that was peititioned.
         public var results: [AuthorizationResult]
         
-        public init(instigator: ESProcess, petitioner: ESProcess? = nil, returnCode: Int32, results: [AuthorizationResult]) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, petitioner: ESProcess? = nil, returnCode: Int32, results: [AuthorizationResult]) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.petitioner = petitioner
             self.returnCode = returnCode
             self.results = results
@@ -1311,7 +1331,10 @@ public extension ESEvent {
     /// For example when adding a user to a group they are already a member of.
     struct ODGroupAdd: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1331,8 +1354,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, groupName: String, member: ESODMemberID, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, groupName: String, member: ESODMemberID, nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.groupName = groupName
             self.member = member
@@ -1347,7 +1371,10 @@ public extension ESEvent {
     /// For example when removing a user from a group they are not a member of.
     struct ODGroupRemove: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1367,8 +1394,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, groupName: String, member: ESODMemberID, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, groupName: String, member: ESODMemberID, nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.groupName = groupName
             self.member = member
@@ -1383,7 +1411,10 @@ public extension ESEvent {
     /// For example when removing a user from a group they are not a member of.
     struct ODGroupSet: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1402,8 +1433,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, groupName: String, members: [ESODMemberID], nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, groupName: String, members: [ESODMemberID], nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.groupName = groupName
             self.members = members
@@ -1415,7 +1447,10 @@ public extension ESEvent {
     /// Notification that an account had its password modified.
     struct ODModifyPassword: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1435,8 +1470,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, accountType: es_od_account_type_t, accountName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, accountType: es_od_account_type_t, accountName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.accountType = accountType
             self.accountName = accountName
@@ -1448,7 +1484,10 @@ public extension ESEvent {
     /// Notification that a user account was disabled.
     struct ODDisableUser: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1465,8 +1504,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.userName = userName
             self.nodeName = nodeName
@@ -1477,7 +1517,10 @@ public extension ESEvent {
     /// Notification that a user account was enabled.
     struct ODEnableUser: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1494,8 +1537,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.userName = userName
             self.nodeName = nodeName
@@ -1510,7 +1554,10 @@ public extension ESEvent {
     /// When an attribute value is added, it is inserted into the set of values for that name.
     struct ODAttributeValueAdd: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1536,8 +1583,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValue: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValue: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.recordType = recordType
             self.recordName = recordName
@@ -1557,7 +1605,10 @@ public extension ESEvent {
     /// - Note: Removing a value that was never added is a no-op.
     struct ODAttributeValueRemove: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1583,8 +1634,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValue: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValue: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.recordType = recordType
             self.recordName = recordName
@@ -1604,7 +1656,10 @@ public extension ESEvent {
     /// - Note: The new set of attribute values may be empty.
     struct ODAttributeSet: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1630,8 +1685,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValues: [String], nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValues: [String], nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.recordType = recordType
             self.recordName = recordName
@@ -1645,7 +1701,10 @@ public extension ESEvent {
     /// Notification that a user account was created.
     struct ODCreateUser: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1662,8 +1721,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.userName = userName
             self.nodeName = nodeName
@@ -1674,7 +1734,10 @@ public extension ESEvent {
     /// Notification that a group was created.
     struct ODCreateGroup: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1691,8 +1754,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, groupName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, groupName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.groupName = groupName
             self.nodeName = nodeName
@@ -1703,7 +1767,10 @@ public extension ESEvent {
     /// Notification that a user account was deleted.
     struct ODDeleteUser: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1720,8 +1787,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.userName = userName
             self.nodeName = nodeName
@@ -1732,7 +1800,10 @@ public extension ESEvent {
     /// Notification that a group was deleted.
     struct ODDeleteGroup: Equatable, Codable {
         /// Process that instigated operation (XPC caller).
-        public var instigator: ESProcess
+        public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1749,8 +1820,9 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess, errorCode: Int32, groupName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, groupName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.errorCode = errorCode
             self.groupName = groupName
             self.nodeName = nodeName

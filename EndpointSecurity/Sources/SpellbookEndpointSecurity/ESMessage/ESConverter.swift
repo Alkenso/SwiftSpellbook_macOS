@@ -161,7 +161,7 @@ public extension ESConverter {
             appURL: esString(es.pointee.app_url)
         )
     }
-
+    
     func esProfile(_ es: es_profile_t) -> ESProfile {
         .init(
             identifier: esString(es.identifier),
@@ -427,7 +427,7 @@ public extension ESConverter {
             return .setreuid(esEvent(setregid: event.setregid))
         case ES_EVENT_TYPE_AUTH_COPYFILE, ES_EVENT_TYPE_NOTIFY_COPYFILE:
             return .copyfile(esEvent(copyfile: event.copyfile))
-        // macOS 13.0:
+            // macOS 13.0:
         case ES_EVENT_TYPE_NOTIFY_AUTHENTICATION:
             return try .authentication(esEvent(authentication: event.authentication))
         case ES_EVENT_TYPE_NOTIFY_XP_MALWARE_DETECTED:
@@ -458,7 +458,7 @@ public extension ESConverter {
             return .btmLaunchItemAdd(esEvent(btmLaunchItemAdd: event.btm_launch_item_add))
         case ES_EVENT_TYPE_NOTIFY_BTM_LAUNCH_ITEM_REMOVE:
             return .btmLaunchItemRemove(esEvent(btmLaunchItemRemove: event.btm_launch_item_remove))
-        // macOS 14.0:
+            // macOS 14.0:
         case ES_EVENT_TYPE_NOTIFY_PROFILE_ADD:
             return .profileAdd(esEvent(profileAdd: event.profile_add.pointee))
         case ES_EVENT_TYPE_NOTIFY_PROFILE_REMOVE:
@@ -585,7 +585,12 @@ public extension ESConverter {
     }
     
     func esEvent(file_provider_materialize es: es_event_file_provider_materialize_t) -> ESEvent.FileProviderMaterialize {
-        .init(instigator: esProcess(es.instigator), source: esFile(es.source), target: esFile(es.target))
+        .init(
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
+            source: esFile(es.source),
+            target: esFile(es.target)
+        )
     }
     
     func esEvent(file_provider_update es: es_event_file_provider_update_t) -> ESEvent.FileProviderUpdate {
@@ -817,7 +822,8 @@ public extension ESConverter {
         switch es.pointee.type {
         case ES_AUTHENTICATION_TYPE_OD:
             type = .od(.init(
-                instigator: esProcess(es.pointee.data.od.pointee.instigator),
+                instigator: es.pointee.data.od.pointee.instigator.flatMap(esProcess),
+                instigatorToken: es.pointee.data.od.pointee.instigator_token,
                 recordType: esString(es.pointee.data.od.pointee.record_type),
                 recordName: esString(es.pointee.data.od.pointee.record_name),
                 nodeName: esString(es.pointee.data.od.pointee.node_name),
@@ -825,13 +831,15 @@ public extension ESConverter {
             ))
         case ES_AUTHENTICATION_TYPE_TOUCHID:
             type = .touchID(.init(
-                instigator: esProcess(es.pointee.data.touchid.pointee.instigator),
+                instigator: es.pointee.data.touchid.pointee.instigator.flatMap(esProcess),
+                instigatorToken: es.pointee.data.touchid.pointee.instigator_token,
                 touchIDMode: es.pointee.data.touchid.pointee.touchid_mode,
                 uid: es.pointee.data.touchid.pointee.has_uid ? es.pointee.data.touchid.pointee.uid.uid : nil
             ))
         case ES_AUTHENTICATION_TYPE_TOKEN:
             type = .token(.init(
-                instigator: esProcess(es.pointee.data.token.pointee.instigator),
+                instigator: es.pointee.data.token.pointee.instigator.flatMap(esProcess),
+                instigatorToken: es.pointee.data.token.pointee.instigator_token,
                 pubkeyHash: esString(es.pointee.data.token.pointee.pubkey_hash),
                 tokenID: esString(es.pointee.data.token.pointee.token_id),
                 kerberosPrincipal: esString(es.pointee.data.token.pointee.kerberos_principal)
@@ -972,7 +980,8 @@ public extension ESConverter {
     
     func esEvent(profileAdd es: es_event_profile_add_t) -> ESEvent.ProfileAdd {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             isUpdate: es.is_update,
             profile: esProfile(es.profile.pointee)
         )
@@ -980,7 +989,8 @@ public extension ESConverter {
     
     func esEvent(profileRemove es: es_event_profile_remove_t) -> ESEvent.ProfileRemove {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             profile: esProfile(es.profile.pointee)
         )
     }
@@ -1001,7 +1011,8 @@ public extension ESConverter {
     
     func esEvent(authorizationPetition es: es_event_authorization_petition_t) -> ESEvent.AuthorizationPetition {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             petitioner: es.petitioner.flatMap(esProcess),
             flags: es.flags,
             rights: UnsafeBufferPointer(start: es.rights, count: es.right_count).map(esString)
@@ -1010,7 +1021,8 @@ public extension ESConverter {
     
     func esEvent(authorizationJudgement es: es_event_authorization_judgement_t) -> ESEvent.AuthorizationJudgement {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             petitioner: es.petitioner.flatMap(esProcess),
             returnCode: es.return_code,
             results: UnsafeBufferPointer(start: es.results, count: es.result_count).map {
@@ -1043,7 +1055,8 @@ public extension ESConverter {
     
     func esEvent(odGroupAdd es: es_event_od_group_add_t) throws -> ESEvent.ODGroupAdd {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             groupName: esString(es.group_name),
             member: try esODMemberID(es.member),
@@ -1054,7 +1067,8 @@ public extension ESConverter {
     
     func esEvent(odGroupRemove es: es_event_od_group_remove_t) throws -> ESEvent.ODGroupRemove {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             groupName: esString(es.group_name),
             member: try esODMemberID(es.member),
@@ -1065,7 +1079,8 @@ public extension ESConverter {
     
     func esEvent(odGroupSet es: es_event_od_group_set_t) throws -> ESEvent.ODGroupSet {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             groupName: esString(es.group_name),
             members: try esODMemberIDs(es.members),
@@ -1076,7 +1091,8 @@ public extension ESConverter {
     
     func esEvent(odModifyPassword es: es_event_od_modify_password_t) -> ESEvent.ODModifyPassword {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             accountType: es.account_type,
             accountName: esString(es.account_name),
@@ -1087,7 +1103,8 @@ public extension ESConverter {
     
     func esEvent(odDisableUser es: es_event_od_disable_user_t) -> ESEvent.ODDisableUser {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             userName: esString(es.user_name),
             nodeName: esString(es.node_name),
@@ -1097,7 +1114,8 @@ public extension ESConverter {
     
     func esEvent(odEnableUser es: es_event_od_enable_user_t) -> ESEvent.ODEnableUser {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             userName: esString(es.user_name),
             nodeName: esString(es.node_name),
@@ -1107,7 +1125,8 @@ public extension ESConverter {
     
     func esEvent(odAttributeValueAdd es: es_event_od_attribute_value_add_t) -> ESEvent.ODAttributeValueAdd {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             recordType: es.record_type,
             recordName: esString(es.record_name),
@@ -1120,7 +1139,8 @@ public extension ESConverter {
     
     func esEvent(odAttributeValueRemove es: es_event_od_attribute_value_remove_t) -> ESEvent.ODAttributeValueRemove {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             recordType: es.record_type,
             recordName: esString(es.record_name),
@@ -1133,7 +1153,8 @@ public extension ESConverter {
     
     func esEvent(odAttributeSet es: es_event_od_attribute_set_t) -> ESEvent.ODAttributeSet {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             recordType: es.record_type,
             recordName: esString(es.record_name),
@@ -1149,7 +1170,8 @@ public extension ESConverter {
     
     func esEvent(odCreateUser es: es_event_od_create_user_t) -> ESEvent.ODCreateUser {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             userName: esString(es.user_name),
             nodeName: esString(es.node_name),
@@ -1159,7 +1181,8 @@ public extension ESConverter {
     
     func esEvent(odCreateGroup es: es_event_od_create_group_t) -> ESEvent.ODCreateGroup {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             groupName: esString(es.group_name),
             nodeName: esString(es.node_name),
@@ -1169,7 +1192,8 @@ public extension ESConverter {
     
     func esEvent(odDeleteUser es: es_event_od_delete_user_t) -> ESEvent.ODDeleteUser {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             userName: esString(es.user_name),
             nodeName: esString(es.node_name),
@@ -1179,7 +1203,8 @@ public extension ESConverter {
     
     func esEvent(odDeleteGroup es: es_event_od_delete_group_t) -> ESEvent.ODDeleteGroup {
         .init(
-            instigator: esProcess(es.instigator),
+            instigator: es.instigator.flatMap(esProcess),
+            instigatorToken: es.instigator_token,
             errorCode: es.error_code,
             groupName: esString(es.group_name),
             nodeName: esString(es.node_name),

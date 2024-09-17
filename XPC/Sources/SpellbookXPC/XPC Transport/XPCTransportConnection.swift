@@ -317,10 +317,10 @@ private class ExportedObject: NSObject, TransportXPC {
             receiveConfirmation(nil, CommonError.unexpected("Connection is died"))
             return
         }
-        connection.receiveRequest(data) { receiveConfirmation($0, $1?.secureCodingCompatible()) }
+        connection.receiveRequest(data) { receiveConfirmation($0, $1?.secureCodingCompliant()) }
     }
     
     func sendReply(id: UUID, data: Data?, error: Error?) {
-        connection.value?.receiveReply(id: id, response: .init(success: data, failure: error?.secureCodingCompatible()))
+        connection.value?.receiveReply(id: id, response: .init(success: data, failure: error?.secureCodingCompliant()))
     }
 }

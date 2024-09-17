@@ -226,7 +226,7 @@ private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol {
                     throw CommonError.unexpected("mutingInverted not available")
                 }
             } catch {
-                reply(false, error.secureCodingCompatible())
+                reply(false, error.secureCodingCompliant())
             }
         }
     }
@@ -321,7 +321,7 @@ private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol {
                 try body(client)
                 reply(nil)
             } catch {
-                reply(error.secureCodingCompatible())
+                reply(error.secureCodingCompliant())
             }
         }
     }

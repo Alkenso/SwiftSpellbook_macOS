@@ -137,7 +137,7 @@ extension ACL.Qualifier {
     public static func gid(_ gid: gid_t) -> Self { .init(id: gid, type: .gid) }
 }
 
-extension acl_tag_t: BridgedCEnum {}
+extension acl_tag_t: SpellbookFoundation.BridgedCEnum {}
 
 extension ACL {
     public struct Tag: _ACLValue, Hashable, Codable {
@@ -163,7 +163,7 @@ extension ACL.Tag: CustomStringConvertible {
     }
 }
 
-extension acl_perm_t: BridgedCEnum {}
+extension acl_perm_t: SpellbookFoundation.BridgedCEnum {}
 
 extension ACL {
     public struct Permissions: _ACLValue, OptionSet, Codable {
@@ -193,7 +193,7 @@ extension ACL {
     }
 }
 
-extension acl_flag_t: BridgedCEnum {}
+extension acl_flag_t: SpellbookFoundation.BridgedCEnum {}
 
 extension ACL {
     public struct Flags: _ACLValue, Hashable, Codable {
