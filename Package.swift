@@ -16,24 +16,24 @@ let package = Package(
         .library(name: "SpellbookLaunchctl", targets: ["SpellbookLaunchctl"]),
         .library(name: "SpellbookXPC", targets: ["SpellbookXPC"]),
         
-        .library(name: "xar", targets: ["xar"]),
-        .library(name: "membership", targets: ["membership"]),
-        .library(name: "libproc", targets: ["libproc"]),
+        .library(name: "s_xar", targets: ["s_xar"]),
+        .library(name: "s_membership", targets: ["s_membership"]),
+        .library(name: "s_libproc", targets: ["s_libproc"]),
     ],
     dependencies: [
         .package(url: "https://github.com/Alkenso/SwiftSpellbook.git", from: "1.1.0"),
     ],
     targets: [
         // MacShims.
-        .systemLibrary(name: "xar", path: "MacShims/xar"),
-        .systemLibrary(name: "membership", path: "MacShims/membership"),
-        .systemLibrary(name: "libproc", path: "MacShims/libproc"),
+        .systemLibrary(name: "s_xar", path: "MacShims/xar"),
+        .systemLibrary(name: "s_membership", path: "MacShims/membership"),
+        .systemLibrary(name: "s_libproc", path: "MacShims/libproc"),
         
         // Mac.
         .target(
             name: "SpellbookMac",
             dependencies: [
-                "membership",
+                "s_membership",
                 .product(name: "SpellbookFoundation", package: "SwiftSpellbook")
             ],
             path: "Mac/Sources/SpellbookMac"
