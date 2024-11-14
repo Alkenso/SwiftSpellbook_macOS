@@ -72,6 +72,7 @@ public final class ESClient: ESClientProtocol {
         self.client = client
         self.pathMutes = ESMutePath(client: client)
         self.processMutes = ESMuteProcess(client: client)
+        self.timeoutQueue = DispatchQueue(label: "\(Self.self).timeout.queue", autoreleaseFrequency: .workItem)
         
         do {
             self.timebaseInfo = try mach_timebase_info.system()
@@ -319,6 +320,7 @@ public final class ESClient: ESClientProtocol {
     private let pathMutes: ESMutePath
     private let processMutes: ESMuteProcess
     private let timebaseInfo: mach_timebase_info?
+    private let timeoutQueue: DispatchQueue
     
     @inline(__always)
     private func handleMessage(_ message: ESMessagePtr) {
@@ -396,7 +398,7 @@ public final class ESClient: ESClientProtocol {
         }
         
         let item = DispatchWorkItem(block: cancellation)
-        DispatchQueue.global().asyncAfter(deadline: .now() + interval, execute: item)
+        timeoutQueue.asyncAfter(delay: interval, execute: item)
         
         return item
     }

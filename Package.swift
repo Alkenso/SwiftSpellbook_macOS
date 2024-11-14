@@ -21,7 +21,7 @@ let package = Package(
         .library(name: "s_libproc", targets: ["s_libproc"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Alkenso/SwiftSpellbook.git", from: "1.1.1"),
+        .package(url: "https://github.com/Alkenso/SwiftSpellbook.git", from: "1.1.3"),
     ],
     targets: [
         // MacShims.

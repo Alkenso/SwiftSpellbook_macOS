@@ -39,15 +39,10 @@ internal final class ESMuteProcess {
         self.cleanupDelay = cleanupDelay
         self.environment = environment
         
-        scheduleCleanupDiedProcesses()
-    }
-    
-    private func scheduleCleanupDiedProcesses() {
-        DispatchQueue.global().asyncAfter(deadline: .now() + cleanupDelay) { [weak self] in
-            guard let self else { return }
-            self.cleanupDiedProcesses()
-            self.scheduleCleanupDiedProcesses()
-        }
+        DispatchQueue(label: "ESMuteProcess.cleanup.queue", autoreleaseFrequency: .workItem)
+            .asyncPeriodically(interval: cleanupDelay, immediately: false) { [weak self] in
+                self?.cleanupDiedProcesses() != nil
+            }
     }
     
     private func cleanupDiedProcesses() {
