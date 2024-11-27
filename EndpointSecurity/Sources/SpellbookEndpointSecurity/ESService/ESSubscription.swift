@@ -25,20 +25,26 @@ import Foundation
 import SpellbookFoundation
 
 public struct ESSubscription {
-    internal let id = UUID()
+    internal let id: UUID
     
-    public init() {}
+    public init(name: String = "ESSubscription") {
+        let id = UUID()
+        
+        self.id = id
+        self.name = name
+        self.queue = DispatchQueue(label: "\(name)-\(id).queue", autoreleaseFrequency: .workItem)
+    }
     
     /// Custom name of subscription for log & debug purposes.
-    public var name = "ESSubscription"
+    public let name: String
     
     /// Set of events to subscribe on.
     public var events: [es_event_type_t] = []
     
     /// Queue where `pathInterestHandler`, `authMessageHandler`
     /// and `notifyMessageHandler` handlers are called.
-    /// Defaults to `nil` that means all handlers are called directly on underlying queue.
-    public var queue: DispatchQueue?
+    /// Defaults to dedicated serial queue.
+    public var queue: DispatchQueue
     
     /// Perform process filtering, additionally to muting of path and processes.
     /// Filtering is based on `interest in process with particular executable path`.
