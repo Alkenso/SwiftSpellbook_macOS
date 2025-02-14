@@ -67,12 +67,12 @@ extension HDIUtil {
     public struct Image: Codable {
         public var blockCount: Int
         public var blockSize: Int
-        public var imageEncrypted: Bool
         public var imagePath: String
         public var imageType: String
         public var removable: Bool
         public var systemEntities: [SystemEntity]
         public var writeable: Bool
+        public var imageEncrypted: Bool?
         public var autodiskmount: Bool?
         public var diskImages2: Bool?
         public var hdidPID: pid_t?
@@ -82,12 +82,12 @@ extension HDIUtil {
         public init(
             blockCount: Int,
             blockSize: Int,
-            imageEncrypted: Bool,
             imagePath: String,
             imageType: String,
             removable: Bool,
             systemEntities: [SystemEntity],
             writeable: Bool,
+            imageEncrypted: Bool? = nil,
             autodiskmount: Bool? = nil,
             diskImages2: Bool? = nil,
             hdidPID: pid_t? = nil,

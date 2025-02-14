@@ -48,12 +48,12 @@ extension HDIUtilParser {
         return try .init(
             blockCount: reader.read(key: "blockcount", as: Int.self),
             blockSize: reader.read(key: "blocksize", as: Int.self),
-            imageEncrypted: reader.read(key: "image-encrypted", as: Bool.self),
             imagePath: reader.read(key: "image-path", as: String.self),
             imageType: reader.read(key: "image-type", as: String.self),
             removable: reader.read(key: "removable", as: Bool.self),
             systemEntities: array(dict, key: "system-entities", parse: systemEntity),
             writeable: reader.read(key: "writeable", as: Bool.self),
+            imageEncrypted: dict["image-encrypted"] as? Bool,
             autodiskmount: dict["autodiskmount"] as? Bool,
             diskImages2: dict["diskimages2"] as? Bool,
             hdidPID: dict["hdid-pid"] as? pid_t,
