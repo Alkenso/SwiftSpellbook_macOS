@@ -11,10 +11,10 @@ jobs:
     strategy:
       matrix:
         include:
+          - xcode: "26.0" # Swift 6.2
+            macOS: "26"
           - xcode: "16.1" # Swift 6
             macOS: "15"
-          - xcode: "15.4" # Swift 5.9
-            macOS: "14"
       fail-fast: false
 
     runs-on: macos-${{ matrix.macOS }}
