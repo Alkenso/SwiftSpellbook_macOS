@@ -58,6 +58,7 @@ func createMessage(path: String, signingID: String, teamID: String, event: es_ev
     nextMessageID += 1
     
     message.pointee.process = .allocate(capacity: 1)
+#if compiler(>=6.2)
     message.pointee.process.pointee = .init(
         audit_token: .random(), ppid: 10, original_ppid: 10, group_id: 20, session_id: 500,
         codesigning_flags: 0x800, is_platform_binary: false, is_es_client: false,
@@ -71,6 +72,20 @@ func createMessage(path: String, signingID: String, teamID: String, event: es_ev
         parent_audit_token: .random(),
         cs_validation_category: ES_CS_VALIDATION_CATEGORY_NONE
     )
+#else
+    message.pointee.process.pointee = .init(
+        audit_token: .random(), ppid: 10, original_ppid: 10, group_id: 20, session_id: 500,
+        codesigning_flags: 0x800, is_platform_binary: false, is_es_client: false,
+        cdhash: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        signing_id: .init(string: signingID),
+        team_id: .init(string: teamID),
+        executable: .allocate(capacity: 1),
+        tty: nil,
+        start_time: .init(tv_sec: 100, tv_usec: 500),
+        responsible_audit_token: .random(),
+        parent_audit_token: .random()
+    )
+#endif
     message.pointee.process.pointee.executable.pointee.path = .init(string: path)
     
     message.pointee.action_type = isAuth ? ES_ACTION_TYPE_AUTH : ES_ACTION_TYPE_NOTIFY
