@@ -44,8 +44,8 @@ internal protocol ESClientXPCProtocol {
     func unsubscribeAll(reply: @escaping (Error?) -> Void)
     func clearCache(reply: @escaping (Error?) -> Void)
     
-    func invertMuting(_ muteType: es_mute_inversion_type_t, reply: @escaping (Error?) -> Void)
-    func mutingInverted(_ muteType: es_mute_inversion_type_t, reply: @escaping (Bool, Error?) -> Void)
+    func invertMuting(_ muteType: Int, reply: @escaping (Error?) -> Void)
+    func mutingInverted(_ muteType: Int, reply: @escaping (Bool, Error?) -> Void)
     
     func sendCustomMessage(_ data: Data, reply: @escaping (Data?, Error?) -> Void)
 }

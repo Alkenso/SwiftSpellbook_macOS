@@ -513,16 +513,23 @@ extension es_mute_path_type_t: SpellbookEndpointSecurity.ESNativeType {
             return "ES_MUTE_PATH_TYPE_PREFIX"
         case ES_MUTE_PATH_TYPE_LITERAL:
             return "ES_MUTE_PATH_TYPE_LITERAL"
-        case ES_MUTE_PATH_TYPE_TARGET_PREFIX:
-            return "ES_MUTE_PATH_TYPE_TARGET_PREFIX"
-        case ES_MUTE_PATH_TYPE_TARGET_LITERAL:
-            return "ES_MUTE_PATH_TYPE_TARGET_LITERAL"
         default:
+            if #available(macOS 13.0, *) {
+                switch self {
+                case ES_MUTE_PATH_TYPE_TARGET_PREFIX:
+                    return "ES_MUTE_PATH_TYPE_TARGET_PREFIX"
+                case ES_MUTE_PATH_TYPE_TARGET_LITERAL:
+                    return "ES_MUTE_PATH_TYPE_TARGET_LITERAL"
+                default:
+                    break
+                }
+            }
             return nil
         }
     }
 }
 
+@available(macOS 13.0, *)
 extension es_mute_inversion_type_t: SpellbookEndpointSecurity.ESNativeType {
     fileprivate var name: String? {
         switch self {

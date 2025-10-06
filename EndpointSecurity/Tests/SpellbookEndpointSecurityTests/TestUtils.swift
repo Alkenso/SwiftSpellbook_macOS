@@ -68,7 +68,8 @@ func createMessage(path: String, signingID: String, teamID: String, event: es_ev
         tty: nil,
         start_time: .init(tv_sec: 100, tv_usec: 500),
         responsible_audit_token: .random(),
-        parent_audit_token: .random()
+        parent_audit_token: .random(),
+        cs_validation_category: ES_CS_VALIDATION_CATEGORY_NONE
     )
     message.pointee.process.pointee.executable.pointee.path = .init(string: path)
     

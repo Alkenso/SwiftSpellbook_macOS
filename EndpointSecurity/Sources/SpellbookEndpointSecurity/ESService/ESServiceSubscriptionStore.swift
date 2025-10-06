@@ -38,7 +38,7 @@ internal final class ESServiceSubscriptionStore {
     }
     
     private var pathInterests: [String: [ObjectIdentifier: Set<es_event_type_t>]] = [:]
-    private var pathInterestsActual = atomic_flag()
+    private let pathInterestsActual = AtomicFlag()
     internal private(set) var subscriptions: [Entry] = []
     private var subscriptionEvents: [es_event_type_t: [Entry]] = [:]
     
@@ -57,13 +57,13 @@ internal final class ESServiceSubscriptionStore {
     }
     
     func resetInterestCache() {
-        atomic_flag_clear(&pathInterestsActual)
+        pathInterestsActual.clear()
     }
     
     // MARK: Handling ES events
     
     func pathInterest(in process: ESProcess) -> ESInterest {
-        if !atomic_flag_test_and_set(&pathInterestsActual) {
+        if !pathInterestsActual.testAndSet() {
             pathInterests.removeAll(keepingCapacity: true)
         }
         

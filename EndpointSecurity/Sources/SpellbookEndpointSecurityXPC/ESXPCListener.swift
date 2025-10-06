@@ -207,20 +207,22 @@ private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol {
         }
     }
     
-    func invertMuting(_ muteType: es_mute_inversion_type_t, reply: @escaping (Error?) -> Void) {
+    func invertMuting(_ muteType: Int, reply: @escaping (Error?) -> Void) {
         if #available(macOS 13.0, *) {
-            withClientOnActionQueue(reply: reply) { try $0.invertMuting(muteType) }
+            withClientOnActionQueue(reply: reply) {
+                try $0.invertMuting(es_mute_inversion_type_t(rawValue: UInt32(muteType)))
+            }
         } else {
             reply(CommonError.unexpected("invertMuting not available"))
         }
     }
     
-    func mutingInverted(_ muteType: es_mute_inversion_type_t, reply: @escaping (Bool, Error?) -> Void) {
+    func mutingInverted(_ muteType: Int, reply: @escaping (Bool, Error?) -> Void) {
         actionQueue.async { [self] in
             do {
                 if #available(macOS 13.0, *) {
                     let client = try client.get(name: "ESClient")
-                    let result = try client.mutingInverted(muteType)
+                    let result = try client.mutingInverted(es_mute_inversion_type_t(rawValue: UInt32(muteType)))
                     reply(result, nil)
                 } else {
                     throw CommonError.unexpected("mutingInverted not available")

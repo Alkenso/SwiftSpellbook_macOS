@@ -264,7 +264,7 @@ public final class ESXPCClient: ESClientProtocol {
     @available(macOS 13.0, *)
     public func invertMuting(_ muteType: es_mute_inversion_type_t) throws {
         try withRemoteClient { client, reply in
-            client.invertMuting(muteType, reply: reply)
+            client.invertMuting(Int(muteType.rawValue), reply: reply)
         }
     }
     
@@ -272,7 +272,7 @@ public final class ESXPCClient: ESClientProtocol {
     @available(macOS 13.0, *)
     public func mutingInverted(_ muteType: es_mute_inversion_type_t) throws -> Bool {
         try withRemoteClient { client, reply in
-            client.mutingInverted(muteType) {
+            client.mutingInverted(Int(muteType.rawValue)) {
                 reply(Result(success: $0, failure: $1))
             }
         }
