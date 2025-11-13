@@ -22,7 +22,7 @@
 
 import Foundation
 
-public struct UnixGroup: Codable {
+public struct UnixGroup: Codable, Sendable {
     public var name: String
     public var gid: gid_t
     

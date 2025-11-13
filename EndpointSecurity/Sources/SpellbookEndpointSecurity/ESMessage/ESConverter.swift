@@ -24,7 +24,7 @@ import EndpointSecurity
 import Foundation
 import SpellbookFoundation
 
-public struct ESConverter {
+public struct ESConverter: Sendable {
     public var version: UInt32
     public var config: Config
     
@@ -35,7 +35,7 @@ public struct ESConverter {
 }
 
 extension ESConverter {
-    public struct Config: Equatable, Codable {
+    public struct Config: Equatable, Codable, Sendable {
         public var execArgs: Bool
         public var execEnv: Bool
         

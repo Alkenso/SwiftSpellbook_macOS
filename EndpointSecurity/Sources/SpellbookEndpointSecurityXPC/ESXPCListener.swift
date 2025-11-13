@@ -32,7 +32,7 @@ private let log = SpellbookLogger.internalLog(.xpc)
 public final class ESXPCListener: NSObject {
     private let createClient: () throws -> ESClient
     private let listener: NSXPCListener
-    private let sendCustomMessage = EventNotify<(data: Data, peer: UUID, reply: (Result<Data, Error>) -> Void)>()
+    private let sendCustomMessage = EventNotify<(data: Data, peer: UUID, reply: @Sendable (Result<Data, Error>) -> Void)>()
     
     /// When receiving incoming conneciton, ESXPCListener creates one ESClient for each connection.
     /// `pathInterestHandler`, `authMessageHandler`, `notifyMessageHandler` are overriden by XPC engine.
@@ -53,7 +53,7 @@ public final class ESXPCListener: NSObject {
         listener.resume()
     }
     
-    public func sendCustomMessage(_ data: Data, to peer: UUID, reply: @escaping (Result<Data, Error>) -> Void) {
+    public func sendCustomMessage(_ data: Data, to peer: UUID, reply: @escaping @Sendable (Result<Data, Error>) -> Void) {
         sendCustomMessage.notify((data, peer, reply))
     }
     
@@ -103,7 +103,7 @@ extension ESXPCListener: NSXPCListenerDelegate {
     }
 }
 
-private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol {
+private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol, @unchecked Sendable {
     private let actionQueue: DispatchQueue
     let id: UUID
     
@@ -218,6 +218,7 @@ private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol {
     }
     
     func mutingInverted(_ muteType: Int, reply: @escaping (Bool, Error?) -> Void) {
+        nonisolated(unsafe) let reply = reply
         actionQueue.async { [self] in
             do {
                 if #available(macOS 13.0, *) {
@@ -251,10 +252,9 @@ private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol {
     private func handlePathInterest(_ process: ESProcess) -> ESInterest {
         do {
             let encoded = try xpcEncoder.encode(process)
-            let executor = SynchronousExecutor("HandlePathInterest", timeout: 5.0)
-            guard let interest = try executor.sync({ reply in
+            guard let interest = synchronouslyWithCallback(timeout: 5.0, { reply in
                 DispatchQueue.global().async { self.delegate.handlePathInterest(encoded, reply: reply) }
-            }) else {
+            }) as? Data else {
                 return .listen()
             }
             let decoded = try xpcDecoder.decode(ESInterest.self, from: interest)
@@ -299,7 +299,8 @@ private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol {
             return
         }
         
-        let proxy = remoteObject.remoteObjectProxyWithErrorHandler(errorHandler)
+        nonisolated(unsafe) let errorHandler = errorHandler
+        let proxy = remoteObject.remoteObjectProxyWithErrorHandler { errorHandler($0) }
         
         guard let delegateProxy = proxy as? ESClientXPCDelegateProtocol else {
             let error = CommonError.cast(proxy, to: ESClientXPCDelegateProtocol.self)
@@ -317,6 +318,8 @@ private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol {
     }
     
     private func withClientOnActionQueue(reply: @escaping (Error?) -> Void, body: @escaping (ESClient) throws -> Void) {
+        nonisolated(unsafe) let reply = reply
+        nonisolated(unsafe) let body = body
         actionQueue.async { [self] in
             do {
                 let client = try client.get(name: "ESClient")

@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -21,7 +21,7 @@ let package = Package(
         .library(name: "s_libproc", targets: ["s_libproc"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Alkenso/SwiftSpellbook.git", from: "1.2.0"),
+        .package(url: "https://github.com/Alkenso/SwiftSpellbook.git", from: "2.0.1"),
     ],
     targets: [
         // MacShims.
@@ -132,3 +132,13 @@ let package = Package(
         ),
     ]
 )
+
+for target in package.targets.filter({ $0.type != .system }) {
+    var settings = target.swiftSettings ?? []
+    settings.append(contentsOf: [
+        .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
+        .enableUpcomingFeature("InferIsolatedConformances"),
+        .enableUpcomingFeature("MemberImportVisibility"),
+    ])
+    target.swiftSettings = settings
+}

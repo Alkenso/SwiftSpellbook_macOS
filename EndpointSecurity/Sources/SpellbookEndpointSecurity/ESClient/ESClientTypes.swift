@@ -24,7 +24,7 @@ import EndpointSecurity
 import Foundation
 import SpellbookFoundation
 
-public struct ESAuthResolution: Equatable, Codable {
+public struct ESAuthResolution: Equatable, Codable, Sendable {
     public var result: ESAuthResult
     public var cache: Bool
     
@@ -41,7 +41,7 @@ extension ESAuthResolution {
     public static let denyOnce = ESAuthResolution(result: .auth(false), cache: false)
 }
 
-public struct ESError<T: RawRepresentable>: Error, Codable where T: Codable {
+public struct ESError<T: RawRepresentable & Sendable>: Error, Codable where T: Codable {
     public var action: String
     public var result: T
     public var client: String
@@ -74,7 +74,7 @@ extension ESAuthResolution {
     }
 }
 
-public struct ESEventSet: Equatable, Codable {
+public struct ESEventSet: Equatable, Codable, Sendable {
     public var events: Set<es_event_type_t>
 }
 
@@ -99,7 +99,7 @@ extension ESEventSet {
     public func inverted() -> ESEventSet { ESEventSet(events: ESEventSet.all.events.subtracting(events)) }
 }
 
-public struct ESInterest: Equatable, Codable {
+public struct ESInterest: Equatable, Codable, Sendable {
     public var events: Set<es_event_type_t>
     public internal(set) var suggestNativeMuting = false
 }

@@ -190,7 +190,7 @@ extension XPCConnection {
         guard let connection = NSXPCConnection.current() else {
             throw CommonError.unwrapNil("NSXPCConnection.current")
         }
-        guard let current = _currentConnectionStorage.read({ $0[ObjectIdentifier(connection)]?.value }) else {
+        guard let current = _currentConnectionStorage.readUnchecked({ $0[ObjectIdentifier(connection)]?.value }) else {
             throw CommonError.notFound(what: "NSXPCConnection", where: "currentConnectionStorage")
         }
         if let concreteCurrent = current as? Self {
@@ -212,7 +212,7 @@ extension XPCConnection {
 
 // MARK: - XPCConnection Auxiliary
 
-public enum XPCConnectionInit {
+public enum XPCConnectionInit: @unchecked Sendable {
     case service(_ name: String)
     case machService(_ name: String, options: NSXPCConnection.Options)
     case listenerEndpoint(_ listenerEndpoint: NSXPCListenerEndpoint)

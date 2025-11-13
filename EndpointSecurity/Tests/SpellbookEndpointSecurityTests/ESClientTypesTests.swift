@@ -3,6 +3,7 @@
 import EndpointSecurity
 import Foundation
 import SpellbookFoundation
+import SpellbookTestUtils
 import XCTest
 
 class ESClientTypesTests: XCTestCase {

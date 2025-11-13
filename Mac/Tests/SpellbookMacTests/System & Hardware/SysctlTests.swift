@@ -1,5 +1,6 @@
 import SpellbookMac
 
+import SpellbookFoundation
 import XCTest
 
 class SysctlTests: XCTestCase {

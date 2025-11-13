@@ -26,7 +26,7 @@ import Foundation
 import SpellbookFoundation
 
 /// XPCClient is a wrapper around XPCConnection that provide KeepAlive ability for the connection.
-public class XPCClient<RemoteInterface, ExportedInterface, ConnectedState> {
+public class XPCClient<RemoteInterface, ExportedInterface, ConnectedState: Sendable>: @unchecked Sendable {
     private typealias Connection = XPCConnection<RemoteInterface, ExportedInterface>
     
     private let connectedStateStore: ValueStore<ConnectedState?>
@@ -157,10 +157,9 @@ public class XPCClient<RemoteInterface, ExportedInterface, ConnectedState> {
                 connectedStateStore.update(nil)
             }
             
-            guard let requestEndpointHandler else { return }
-            
+            nonisolated(unsafe) let requestEndpointHandler = requestEndpointHandler
             queue.asyncAfter(deadline: .now() + (immediately ? 0 : reconnectDelay)) {
-                requestEndpointHandler { [weak self] endpoint in
+                requestEndpointHandler? { [weak self] endpoint in
                     guard let self = self else { return }
                     if let endpoint {
                         self.connection = self.createConnection(endpoint)

@@ -20,8 +20,9 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //  SOFTWARE.
 
+import SpellbookFoundation
 import Foundation
-@_implementationOnly import s_membership
+private import s_membership
 
 /// Swift wrapper around `membership.h` functional.
 public enum Membership {
@@ -150,7 +151,7 @@ public enum Membership {
 }
 
 extension Membership {
-    public struct IDType: RawRepresentable, Hashable, Codable {
+    public struct IDType: RawRepresentable, Hashable, Codable, Sendable {
         public var rawValue: Int32
         public init(rawValue: Int32) { self.rawValue = rawValue }
         

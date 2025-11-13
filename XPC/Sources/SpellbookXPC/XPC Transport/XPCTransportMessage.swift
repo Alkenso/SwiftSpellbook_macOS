@@ -25,12 +25,12 @@
 import Foundation
 import SpellbookFoundation
 
-public struct XPCVoid: Codable {
+public struct XPCVoid: Codable, Sendable {
     public init() {}
 }
 
-public struct XPCTransportMessage<Request: Codable, Response: Codable> {
-    private let replyAction: (Result<Response, Error>) -> Void
+public struct XPCTransportMessage<Request: Codable & Sendable, Response: Codable & Sendable>: Sendable {
+    private let replyAction: @Sendable (Result<Response, Error>) -> Void
     
     /// Message request
     public let request: Request
@@ -45,7 +45,7 @@ public struct XPCTransportMessage<Request: Codable, Response: Codable> {
     ///     - request: `Encodable` type to be sent to another party
     ///     - reply: action to be called when another party responds
     /// - Warning: `reply` action MUST NOT deal with `XPCTransportMessage` type: it is unsupported and error-prone
-    public init(request: Request, reply: @escaping (Result<Response, Error>) -> Void) {
+    public init(request: Request, reply: @escaping @Sendable (Result<Response, Error>) -> Void) {
         self.request = request
         self.replyAction = reply
     }
@@ -57,7 +57,7 @@ public struct XPCTransportMessage<Request: Codable, Response: Codable> {
 }
 
 extension XPCTransportMessage {
-    public init(reply: @escaping (Result<Response, Error>) -> Void) where Request == XPCVoid {
+    public init(reply: @escaping @Sendable (Result<Response, Error>) -> Void) where Request == XPCVoid {
         self.init(request: XPCVoid(), reply: reply)
     }
     
@@ -104,8 +104,8 @@ extension XPCTransportMessage: Codable {
     }
 }
 
-internal typealias XPCTransportMessageReplySender = (UUID, Result<XPCPayload, Error>) -> Void
-internal typealias XPCTransportMessageReplyCollector = (XPCReply) -> Void
+internal typealias XPCTransportMessageReplySender = @Sendable (UUID, Result<XPCPayload, Error>) -> Void
+internal typealias XPCTransportMessageReplyCollector = @Sendable (XPCReply) -> Void
 
 extension CodingUserInfoKey {
     internal static let replySender = CodingUserInfoKey(rawValue: "sXPC.XPCReplySender")!

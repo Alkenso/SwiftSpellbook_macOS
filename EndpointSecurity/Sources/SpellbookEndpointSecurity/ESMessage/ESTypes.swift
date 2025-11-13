@@ -24,7 +24,7 @@ import EndpointSecurity
 import Foundation
 import SpellbookFoundation
 
-public struct ESMessage: Equatable, Codable {
+public struct ESMessage: Equatable, Codable, Sendable {
     public var version: UInt32
     public var time: timespec
     public var machTime: UInt64
@@ -37,7 +37,7 @@ public struct ESMessage: Equatable, Codable {
     public var thread: ESThread? /* field available only if message version >= 4 */
     public var globalSeqNum: UInt64? /* field available only if message version >= 4 */
     
-    public enum Action: Equatable, Codable {
+    public enum Action: Equatable, Codable, Sendable {
         case auth
         case notify(ESAuthResult)
     }
@@ -57,7 +57,7 @@ public struct ESMessage: Equatable, Codable {
     }
 }
 
-public struct ESProcess: Equatable, Codable {
+public struct ESProcess: Equatable, Codable, Sendable {
     public var auditToken: audit_token_t
     public var ppid: pid_t
     public var originalPpid: pid_t
@@ -99,7 +99,7 @@ extension ESProcess {
     public var name: String { executable.path.lastPathComponent }
 }
 
-public struct ESFile: Equatable, Codable {
+public struct ESFile: Equatable, Codable, Sendable {
     public var path: String
     public var truncated: Bool
     public var stat: stat
@@ -111,7 +111,7 @@ public struct ESFile: Equatable, Codable {
     }
 }
 
-public struct ESThread: Equatable, Codable {
+public struct ESThread: Equatable, Codable, Sendable {
     public var threadID: UInt64
     
     public init(threadID: UInt64) {
@@ -119,7 +119,7 @@ public struct ESThread: Equatable, Codable {
     }
 }
 
-public struct ESThreadState: Equatable, Codable {
+public struct ESThreadState: Equatable, Codable, Sendable {
     public var flavor: Int32
     public var state: Data
     
@@ -132,7 +132,7 @@ public struct ESThreadState: Equatable, Codable {
 /// Information from a signed file. If the file is a multiarchitecture binary, only the
 /// signing information for the native host architecture is reported. I.e. the CDHash
 /// from the AArch64 slice if the host is AArch64.
-public struct ESSignedFileInfo: Equatable, Codable {
+public struct ESSignedFileInfo: Equatable, Codable, Sendable {
     /// Code Directory Hash
     public var cdHash: Data
     
@@ -149,7 +149,7 @@ public struct ESSignedFileInfo: Equatable, Codable {
     }
 }
 
-public struct ESAuthResult: Equatable, Codable, RawRepresentable {
+public struct ESAuthResult: Equatable, Codable, Sendable, RawRepresentable {
     public static func auth(_ auth: Bool) -> ESAuthResult { .init(rawValue: auth ? .max : 0) }
     public static func flags(_ flags: UInt32) -> ESAuthResult { .init(rawValue: flags) }
     
@@ -160,7 +160,7 @@ public struct ESAuthResult: Equatable, Codable, RawRepresentable {
     }
 }
 
-public struct BTMLaunchItem: Equatable, Codable {
+public struct BTMLaunchItem: Equatable, Codable, Sendable {
     public var itemType: es_btm_item_type_t
     public var legacy: Bool
     public var managed: Bool
@@ -178,7 +178,7 @@ public struct BTMLaunchItem: Equatable, Codable {
     }
 }
 
-public struct ESProfile: Equatable, Codable {
+public struct ESProfile: Equatable, Codable, Sendable {
     public var identifier: String
     public var uuid: String
     public var installSource: es_profile_source_t
@@ -197,7 +197,7 @@ public struct ESProfile: Equatable, Codable {
 }
 
 /// The identity of a group member.
-public enum ESODMemberID: Equatable, Codable {
+public enum ESODMemberID: Equatable, Codable, Sendable {
     /// Group member is a user, designated by name.
     case userName(String)
     
@@ -208,7 +208,7 @@ public enum ESODMemberID: Equatable, Codable {
     case groupUUID(UUID)
 }
 
-public enum ESEvent: Equatable, Codable {
+public enum ESEvent: Equatable, Codable, Sendable {
     case access(Access)
     case authentication(Authentication)
     case authorizationJudgement(AuthorizationJudgement)
@@ -311,7 +311,7 @@ public enum ESEvent: Equatable, Codable {
 }
 
 public extension ESEvent {
-    struct Access: Equatable, Codable {
+    struct Access: Equatable, Codable, Sendable {
         public var mode: Int32
         public var target: ESFile
         
@@ -321,7 +321,7 @@ public extension ESEvent {
         }
     }
     
-    struct Authentication: Equatable, Codable {
+    struct Authentication: Equatable, Codable, Sendable {
         public var success: Bool
         public var type: AuthenticationType
         
@@ -331,13 +331,13 @@ public extension ESEvent {
         }
     }
     
-    enum AuthenticationType: Equatable, Codable {
+    enum AuthenticationType: Equatable, Codable, Sendable {
         case od(OD)
         case touchID(TouchID)
         case token(Token)
         case autoUnlock(AutoUnlock)
         
-        public struct OD: Equatable, Codable {
+        public struct OD: Equatable, Codable, Sendable {
             public var instigator: ESProcess?
             public var instigatorToken: audit_token_t
             public var recordType: String
@@ -355,7 +355,7 @@ public extension ESEvent {
             }
         }
         
-        public struct TouchID: Equatable, Codable {
+        public struct TouchID: Equatable, Codable, Sendable {
             public var instigator: ESProcess?
             public var instigatorToken: audit_token_t
             public var touchIDMode: es_touchid_mode_t
@@ -369,7 +369,7 @@ public extension ESEvent {
             }
         }
         
-        public struct Token: Equatable, Codable {
+        public struct Token: Equatable, Codable, Sendable {
             public var instigator: ESProcess?
             public var instigatorToken: audit_token_t
             public var pubkeyHash: String
@@ -385,7 +385,7 @@ public extension ESEvent {
             }
         }
         
-        public struct AutoUnlock: Equatable, Codable {
+        public struct AutoUnlock: Equatable, Codable, Sendable {
             public var username: String
             public var type: es_auto_unlock_type_t
             
@@ -396,7 +396,7 @@ public extension ESEvent {
         }
     }
     
-    struct BTMLaunchItemAdd: Equatable, Codable {
+    struct BTMLaunchItemAdd: Equatable, Codable, Sendable {
         public var instigator: ESProcess?
         public var app: ESProcess?
         public var item: BTMLaunchItem
@@ -410,7 +410,7 @@ public extension ESEvent {
         }
     }
     
-    struct BTMLaunchItemRemove: Equatable, Codable {
+    struct BTMLaunchItemRemove: Equatable, Codable, Sendable {
         public var instigator: ESProcess?
         public var app: ESProcess?
         public var item: BTMLaunchItem
@@ -422,7 +422,7 @@ public extension ESEvent {
         }
     }
     
-    struct Chdir: Equatable, Codable {
+    struct Chdir: Equatable, Codable, Sendable {
         public var target: ESFile
         
         public init(target: ESFile) {
@@ -430,7 +430,7 @@ public extension ESEvent {
         }
     }
     
-    struct Chroot: Equatable, Codable {
+    struct Chroot: Equatable, Codable, Sendable {
         public var target: ESFile
         
         public init(target: ESFile) {
@@ -438,7 +438,7 @@ public extension ESEvent {
         }
     }
     
-    struct Clone: Equatable, Codable {
+    struct Clone: Equatable, Codable, Sendable {
         public var source: ESFile
         public var targetDir: ESFile
         public var targetName: String
@@ -450,7 +450,7 @@ public extension ESEvent {
         }
     }
     
-    struct CopyFile: Equatable, Codable {
+    struct CopyFile: Equatable, Codable, Sendable {
         public var source: ESFile
         public var targetFile: ESFile?
         public var targetDir: ESFile
@@ -468,7 +468,7 @@ public extension ESEvent {
         }
     }
     
-    struct Close: Equatable, Codable {
+    struct Close: Equatable, Codable, Sendable {
         public var modified: Bool
         public var target: ESFile
         
@@ -478,15 +478,15 @@ public extension ESEvent {
         }
     }
     
-    struct Create: Equatable, Codable {
+    struct Create: Equatable, Codable, Sendable {
         public var destination: Destination
         
         /// - Note: field available only if message version >= 2
         /// - Note: `acl` is present only in original message.
         /// If structure is re-encoded, this field will be lost.
-        public var acl: Resource<acl_t>?
+        public nonisolated(unsafe) var acl: Resource<acl_t>?
         
-        public enum Destination: Equatable, Codable {
+        public enum Destination: Equatable, Codable, Sendable {
             case existingFile(ESFile)
             case newPath(dir: ESFile, filename: String, mode: mode_t)
         }
@@ -503,7 +503,7 @@ public extension ESEvent {
         }
     }
     
-    struct DeleteExtAttr: Equatable, Codable {
+    struct DeleteExtAttr: Equatable, Codable, Sendable {
         public var target: ESFile
         public var extattr: String
         
@@ -513,7 +513,7 @@ public extension ESEvent {
         }
     }
     
-    struct Dup: Equatable, Codable {
+    struct Dup: Equatable, Codable, Sendable {
         public var target: ESFile
         
         public init(target: ESFile) {
@@ -521,7 +521,7 @@ public extension ESEvent {
         }
     }
     
-    struct ExchangeData: Equatable, Codable {
+    struct ExchangeData: Equatable, Codable, Sendable {
         public var file1: ESFile
         public var file2: ESFile
         
@@ -531,7 +531,7 @@ public extension ESEvent {
         }
     }
     
-    struct Exec: Equatable, Codable {
+    struct Exec: Equatable, Codable, Sendable {
         public var target: ESProcess
         public var script: ESFile? /* field available only if message version >= 2 */
         public var cwd: ESFile? /* field available only if message version >= 3 */
@@ -548,7 +548,7 @@ public extension ESEvent {
         }
     }
     
-    struct Exit: Equatable, Codable {
+    struct Exit: Equatable, Codable, Sendable {
         public var status: Int32
         
         public init(status: Int32) {
@@ -556,7 +556,7 @@ public extension ESEvent {
         }
     }
     
-    struct FileProviderMaterialize: Equatable, Codable {
+    struct FileProviderMaterialize: Equatable, Codable, Sendable {
         public var instigator: ESProcess?
         public var instigatorToken: audit_token_t
         public var source: ESFile
@@ -570,7 +570,7 @@ public extension ESEvent {
         }
     }
     
-    struct FileProviderUpdate: Equatable, Codable {
+    struct FileProviderUpdate: Equatable, Codable, Sendable {
         public var source: ESFile
         public var targetPath: String
         
@@ -580,7 +580,7 @@ public extension ESEvent {
         }
     }
     
-    struct Fcntl: Equatable, Codable {
+    struct Fcntl: Equatable, Codable, Sendable {
         public var target: ESFile
         public var cmd: Int32
         
@@ -590,7 +590,7 @@ public extension ESEvent {
         }
     }
     
-    struct Fork: Equatable, Codable {
+    struct Fork: Equatable, Codable, Sendable {
         public var child: ESProcess
         
         public init(child: ESProcess) {
@@ -598,7 +598,7 @@ public extension ESEvent {
         }
     }
     
-    struct FsGetPath: Equatable, Codable {
+    struct FsGetPath: Equatable, Codable, Sendable {
         public var target: ESFile
         
         public init(target: ESFile) {
@@ -606,7 +606,7 @@ public extension ESEvent {
         }
     }
     
-    struct GetTask: Equatable, Codable {
+    struct GetTask: Equatable, Codable, Sendable {
         public var target: ESProcess
         
         public init(target: ESProcess) {
@@ -614,7 +614,7 @@ public extension ESEvent {
         }
     }
     
-    struct GetTaskRead: Equatable, Codable {
+    struct GetTaskRead: Equatable, Codable, Sendable {
         public var target: ESProcess
         
         public init(target: ESProcess) {
@@ -622,7 +622,7 @@ public extension ESEvent {
         }
     }
     
-    struct GetTaskInspect: Equatable, Codable {
+    struct GetTaskInspect: Equatable, Codable, Sendable {
         public var target: ESProcess
         
         public init(target: ESProcess) {
@@ -630,7 +630,7 @@ public extension ESEvent {
         }
     }
     
-    struct GetTaskName: Equatable, Codable {
+    struct GetTaskName: Equatable, Codable, Sendable {
         public var target: ESProcess
         
         public init(target: ESProcess) {
@@ -638,7 +638,7 @@ public extension ESEvent {
         }
     }
     
-    struct GetAttrList: Equatable, Codable {
+    struct GetAttrList: Equatable, Codable, Sendable {
         public var attrlist: attrlist
         public var target: ESFile
         
@@ -648,7 +648,7 @@ public extension ESEvent {
         }
     }
     
-    struct GetExtAttr: Equatable, Codable {
+    struct GetExtAttr: Equatable, Codable, Sendable {
         public var target: ESFile
         public var extattr: String
         
@@ -658,7 +658,7 @@ public extension ESEvent {
         }
     }
     
-    struct IOKitOpen: Equatable, Codable {
+    struct IOKitOpen: Equatable, Codable, Sendable {
         public var userClientType: UInt32
         public var userClientClass: String
         
@@ -668,7 +668,7 @@ public extension ESEvent {
         }
     }
     
-    struct KextLoad: Equatable, Codable {
+    struct KextLoad: Equatable, Codable, Sendable {
         public var identifier: String
         
         public init(identifier: String) {
@@ -676,7 +676,7 @@ public extension ESEvent {
         }
     }
     
-    struct KextUnload: Equatable, Codable {
+    struct KextUnload: Equatable, Codable, Sendable {
         public var identifier: String
         
         public init(identifier: String) {
@@ -684,7 +684,7 @@ public extension ESEvent {
         }
     }
     
-    struct LoginLogin: Equatable, Codable {
+    struct LoginLogin: Equatable, Codable, Sendable {
         public var success: Bool
         public var failureMessage: String
         public var username: String
@@ -698,7 +698,7 @@ public extension ESEvent {
         }
     }
     
-    struct LoginLogout: Equatable, Codable {
+    struct LoginLogout: Equatable, Codable, Sendable {
         public var username: String
         public var uid: uid_t
         
@@ -708,7 +708,7 @@ public extension ESEvent {
         }
     }
     
-    struct Link: Equatable, Codable {
+    struct Link: Equatable, Codable, Sendable {
         public var source: ESFile
         public var targetDir: ESFile
         public var targetFilename: String
@@ -720,7 +720,7 @@ public extension ESEvent {
         }
     }
     
-    struct ListExtAttr: Equatable, Codable {
+    struct ListExtAttr: Equatable, Codable, Sendable {
         public var target: ESFile
         
         public init(target: ESFile) {
@@ -728,7 +728,7 @@ public extension ESEvent {
         }
     }
     
-    struct Lookup: Equatable, Codable {
+    struct Lookup: Equatable, Codable, Sendable {
         public var sourceDir: ESFile
         public var relativeTarget: String
         
@@ -738,7 +738,7 @@ public extension ESEvent {
         }
     }
     
-    struct LWSessionLogin: Equatable, Codable {
+    struct LWSessionLogin: Equatable, Codable, Sendable {
         public var username: String
         public var graphicalSessionID: es_graphical_session_id_t
         
@@ -752,7 +752,7 @@ public extension ESEvent {
     typealias LWSessionLock = LWSessionLogin
     typealias LWSessionUnlock = LWSessionLogin
     
-    struct MMap: Equatable, Codable {
+    struct MMap: Equatable, Codable, Sendable {
         public var protection: Int32
         public var maxProtection: Int32
         public var flags: Int32
@@ -768,7 +768,7 @@ public extension ESEvent {
         }
     }
     
-    struct Mount: Equatable, Codable {
+    struct Mount: Equatable, Codable, Sendable {
         public var statfs: statfs
         
         public init(statfs: statfs) {
@@ -776,7 +776,7 @@ public extension ESEvent {
         }
     }
     
-    struct MProtect: Equatable, Codable {
+    struct MProtect: Equatable, Codable, Sendable {
         public var protection: Int32
         public var address: user_addr_t
         public var size: user_size_t
@@ -788,7 +788,7 @@ public extension ESEvent {
         }
     }
     
-    struct Open: Equatable, Codable {
+    struct Open: Equatable, Codable, Sendable {
         public var fflag: Int32
         public var file: ESFile
         
@@ -798,7 +798,7 @@ public extension ESEvent {
         }
     }
     
-    struct OpensshLogin: Equatable, Codable {
+    struct OpensshLogin: Equatable, Codable, Sendable {
         public var success: Bool
         public var resultType: es_openssh_login_result_type_t
         public var sourceAddressType: es_address_type_t
@@ -816,7 +816,7 @@ public extension ESEvent {
         }
     }
     
-    struct OpensshLogout: Equatable, Codable {
+    struct OpensshLogout: Equatable, Codable, Sendable {
         public var sourceAddressType: es_address_type_t
         public var sourceAddress: String
         public var username: String
@@ -830,7 +830,7 @@ public extension ESEvent {
         }
     }
     
-    struct ProcCheck: Equatable, Codable {
+    struct ProcCheck: Equatable, Codable, Sendable {
         public var target: ESProcess?
         public var type: es_proc_check_type_t
         public var flavor: Int32
@@ -842,7 +842,7 @@ public extension ESEvent {
         }
     }
     
-    struct ProcSuspendResume: Equatable, Codable {
+    struct ProcSuspendResume: Equatable, Codable, Sendable {
         public var target: ESProcess?
         public var type: es_proc_suspend_resume_type_t
         
@@ -852,7 +852,7 @@ public extension ESEvent {
         }
     }
     
-    struct ProfileAdd: Equatable, Codable {
+    struct ProfileAdd: Equatable, Codable, Sendable {
         public var instigator: ESProcess?
         public var instigatorToken: audit_token_t
         public var isUpdate: Bool
@@ -866,7 +866,7 @@ public extension ESEvent {
         }
     }
     
-    struct ProfileRemove: Equatable, Codable {
+    struct ProfileRemove: Equatable, Codable, Sendable {
         public var instigator: ESProcess?
         public var instigatorToken: audit_token_t
         public var profile: ESProfile
@@ -878,7 +878,7 @@ public extension ESEvent {
         }
     }
     
-    struct PtyClose: Equatable, Codable {
+    struct PtyClose: Equatable, Codable, Sendable {
         public var dev: dev_t
         
         public init(dev: dev_t) {
@@ -886,7 +886,7 @@ public extension ESEvent {
         }
     }
     
-    struct PtyGrant: Equatable, Codable {
+    struct PtyGrant: Equatable, Codable, Sendable {
         public var dev: dev_t
         
         public init(dev: dev_t) {
@@ -894,7 +894,7 @@ public extension ESEvent {
         }
     }
     
-    struct Readdir: Equatable, Codable {
+    struct Readdir: Equatable, Codable, Sendable {
         public var target: ESFile
         
         public init(target: ESFile) {
@@ -902,7 +902,7 @@ public extension ESEvent {
         }
     }
     
-    struct Readlink: Equatable, Codable {
+    struct Readlink: Equatable, Codable, Sendable {
         public var source: ESFile
         
         public init(source: ESFile) {
@@ -910,7 +910,7 @@ public extension ESEvent {
         }
     }
     
-    struct RemoteThreadCreate: Equatable, Codable {
+    struct RemoteThreadCreate: Equatable, Codable, Sendable {
         public var target: ESProcess
         public var threadState: ESThreadState?
         
@@ -920,7 +920,7 @@ public extension ESEvent {
         }
     }
     
-    struct Remount: Equatable, Codable {
+    struct Remount: Equatable, Codable, Sendable {
         public var statfs: statfs
         
         public init(statfs: statfs) {
@@ -928,11 +928,11 @@ public extension ESEvent {
         }
     }
     
-    struct Rename: Equatable, Codable {
+    struct Rename: Equatable, Codable, Sendable {
         public var source: ESFile
         public var destination: Destination
         
-        public enum Destination: Equatable, Codable {
+        public enum Destination: Equatable, Codable, Sendable {
             case existingFile(ESFile)
             case newPath(dir: ESFile, filename: String)
         }
@@ -943,7 +943,7 @@ public extension ESEvent {
         }
     }
     
-    struct ScreensharingAttach: Equatable, Codable {
+    struct ScreensharingAttach: Equatable, Codable, Sendable {
         public var success: Bool
         public var sourceAddressType: es_address_type_t
         public var sourceAddress: String
@@ -967,7 +967,7 @@ public extension ESEvent {
         }
     }
     
-    struct ScreensharingDetach: Equatable, Codable {
+    struct ScreensharingDetach: Equatable, Codable, Sendable {
         public var sourceAddressType: es_address_type_t
         public var sourceAddress: String
         public var viewerAppleID: String
@@ -981,7 +981,7 @@ public extension ESEvent {
         }
     }
     
-    struct SearchFS: Equatable, Codable {
+    struct SearchFS: Equatable, Codable, Sendable {
         public var attrlist: attrlist
         public var target: ESFile
         
@@ -991,13 +991,13 @@ public extension ESEvent {
         }
     }
     
-    struct SetACL: Equatable, Codable {
+    struct SetACL: Equatable, Codable, Sendable {
         public var target: ESFile
         public var setOrClear: es_set_or_clear_t
         
         /// - Note: `acl` is present only in original message.
         /// If structure is re-encoded, this field will be lost.
-        public var acl: Resource<acl_t>?
+        public nonisolated(unsafe) var acl: Resource<acl_t>?
         
         public init(target: ESFile, setOrClear: es_set_or_clear_t, acl: acl_t?) {
             self.target = target
@@ -1013,7 +1013,7 @@ public extension ESEvent {
         }
     }
     
-    struct SetAttrList: Equatable, Codable {
+    struct SetAttrList: Equatable, Codable, Sendable {
         public var attrlist: attrlist
         public var target: ESFile
         
@@ -1023,7 +1023,7 @@ public extension ESEvent {
         }
     }
     
-    struct SetExtAttr: Equatable, Codable {
+    struct SetExtAttr: Equatable, Codable, Sendable {
         public var target: ESFile
         public var extattr: String
         
@@ -1033,7 +1033,7 @@ public extension ESEvent {
         }
     }
     
-    struct SetFlags: Equatable, Codable {
+    struct SetFlags: Equatable, Codable, Sendable {
         public var flags: UInt32
         public var target: ESFile
         
@@ -1043,7 +1043,7 @@ public extension ESEvent {
         }
     }
     
-    struct SetMode: Equatable, Codable {
+    struct SetMode: Equatable, Codable, Sendable {
         public var mode: mode_t
         public var target: ESFile
         
@@ -1053,7 +1053,7 @@ public extension ESEvent {
         }
     }
     
-    struct SetOwner: Equatable, Codable {
+    struct SetOwner: Equatable, Codable, Sendable {
         public var uid: uid_t
         public var gid: gid_t
         public var target: ESFile
@@ -1065,7 +1065,7 @@ public extension ESEvent {
         }
     }
     
-    struct SetUID: Equatable, Codable {
+    struct SetUID: Equatable, Codable, Sendable {
         public var uid: uid_t
         
         public init(uid: uid_t) {
@@ -1073,7 +1073,7 @@ public extension ESEvent {
         }
     }
     
-    struct SetREUID: Equatable, Codable {
+    struct SetREUID: Equatable, Codable, Sendable {
         public var ruid: uid_t
         public var euid: uid_t
         
@@ -1083,7 +1083,7 @@ public extension ESEvent {
         }
     }
     
-    struct Signal: Equatable, Codable {
+    struct Signal: Equatable, Codable, Sendable {
         public var sig: Int32
         public var target: ESProcess
         
@@ -1093,7 +1093,7 @@ public extension ESEvent {
         }
     }
     
-    struct Stat: Equatable, Codable {
+    struct Stat: Equatable, Codable, Sendable {
         public var target: ESFile
         
         public init(target: ESFile) {
@@ -1101,7 +1101,7 @@ public extension ESEvent {
         }
     }
     
-    struct Trace: Equatable, Codable {
+    struct Trace: Equatable, Codable, Sendable {
         public var target: ESProcess
         
         public init(target: ESProcess) {
@@ -1109,7 +1109,7 @@ public extension ESEvent {
         }
     }
     
-    struct Truncate: Equatable, Codable {
+    struct Truncate: Equatable, Codable, Sendable {
         public var target: ESFile
         
         public init(target: ESFile) {
@@ -1117,7 +1117,7 @@ public extension ESEvent {
         }
     }
     
-    struct UipcBind: Equatable, Codable {
+    struct UipcBind: Equatable, Codable, Sendable {
         public var dir: ESFile
         public var filename: String
         public var mode: mode_t
@@ -1129,7 +1129,7 @@ public extension ESEvent {
         }
     }
     
-    struct UipcConnect: Equatable, Codable {
+    struct UipcConnect: Equatable, Codable, Sendable {
         public var file: ESFile
         public var domain: Int32
         public var type: Int32
@@ -1143,7 +1143,7 @@ public extension ESEvent {
         }
     }
     
-    struct Unlink: Equatable, Codable {
+    struct Unlink: Equatable, Codable, Sendable {
         public var target: ESFile
         public var parentDir: ESFile
         
@@ -1153,7 +1153,7 @@ public extension ESEvent {
         }
     }
     
-    struct Unmount: Equatable, Codable {
+    struct Unmount: Equatable, Codable, Sendable {
         public var statfs: statfs
         
         public init(statfs: statfs) {
@@ -1161,7 +1161,7 @@ public extension ESEvent {
         }
     }
     
-    struct Utimes: Equatable, Codable {
+    struct Utimes: Equatable, Codable, Sendable {
         public var target: ESFile
         public var aTime: timespec
         public var mTime: timespec
@@ -1173,7 +1173,7 @@ public extension ESEvent {
         }
     }
     
-    struct Write: Equatable, Codable {
+    struct Write: Equatable, Codable, Sendable {
         public var target: ESFile
         
         public init(target: ESFile) {
@@ -1181,7 +1181,7 @@ public extension ESEvent {
         }
     }
     
-    struct XPMalwareDetected: Equatable, Codable {
+    struct XPMalwareDetected: Equatable, Codable, Sendable {
         public var signatureVersion: String
         public var malwareIdentifier: String
         public var incidentIdentifier: String
@@ -1195,7 +1195,7 @@ public extension ESEvent {
         }
     }
     
-    struct XPMalwareRemediated: Equatable, Codable {
+    struct XPMalwareRemediated: Equatable, Codable, Sendable {
         public var signatureVersion: String
         public var malwareIdentifier: String
         public var incidentIdentifier: String
@@ -1217,7 +1217,7 @@ public extension ESEvent {
         }
     }
     
-    struct SU: Equatable, Codable {
+    struct SU: Equatable, Codable, Sendable {
         public var success: Bool
         public var failureMessage: String
         public var fromUID: uid_t
@@ -1241,7 +1241,7 @@ public extension ESEvent {
         }
     }
     
-    struct SUDO: Equatable, Codable {
+    struct SUDO: Equatable, Codable, Sendable {
         public var success: Bool
         public var rejectInfo: RejectInfo?
         public var fromUID: uid_t?
@@ -1260,7 +1260,7 @@ public extension ESEvent {
             self.command = command
         }
         
-        public struct RejectInfo: Equatable, Codable {
+        public struct RejectInfo: Equatable, Codable, Sendable {
             public var pluginName: String
             public var pluginType: es_sudo_plugin_type_t
             public var failureMessage: String
@@ -1274,7 +1274,7 @@ public extension ESEvent {
     }
     
     /// Notification that a process peititioned for certain authorization rights.
-    struct AuthorizationPetition: Equatable, Codable {
+    struct AuthorizationPetition: Equatable, Codable, Sendable {
         /// Process that submitted the petition (XPC caller).
         public var instigator: ESProcess?
         
@@ -1300,7 +1300,7 @@ public extension ESEvent {
     }
     
     /// Notification that a process had it's right petition judged.
-    struct AuthorizationJudgement: Equatable, Codable {
+    struct AuthorizationJudgement: Equatable, Codable, Sendable {
         /// Process that submitted the petition (XPC caller).
         public var instigator: ESProcess?
         
@@ -1326,7 +1326,7 @@ public extension ESEvent {
         }
         
         /// Describes, for a single right, the class of that right and if it was granted.
-        public struct AuthorizationResult: Equatable, Codable {
+        public struct AuthorizationResult: Equatable, Codable, Sendable {
             /// The name of the right being considered.
             public var rightName: String
             
@@ -1350,7 +1350,7 @@ public extension ESEvent {
     ///
     /// - Note: This event does not indicate that a member was actually added.
     /// For example when adding a user to a group they are already a member of.
-    struct ODGroupAdd: Equatable, Codable {
+    struct ODGroupAdd: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1390,7 +1390,7 @@ public extension ESEvent {
     ///
     /// - Note: This event does not indicate that a member was actually removed.
     /// For example when removing a user from a group they are not a member of.
-    struct ODGroupRemove: Equatable, Codable {
+    struct ODGroupRemove: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1430,7 +1430,7 @@ public extension ESEvent {
     ///
     /// - Note: This event does not indicate that a member was actually removed.
     /// For example when removing a user from a group they are not a member of.
-    struct ODGroupSet: Equatable, Codable {
+    struct ODGroupSet: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1466,7 +1466,7 @@ public extension ESEvent {
     }
     
     /// Notification that an account had its password modified.
-    struct ODModifyPassword: Equatable, Codable {
+    struct ODModifyPassword: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1503,7 +1503,7 @@ public extension ESEvent {
     }
     
     /// Notification that a user account was disabled.
-    struct ODDisableUser: Equatable, Codable {
+    struct ODDisableUser: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1536,7 +1536,7 @@ public extension ESEvent {
     }
     
     /// Notification that a user account was enabled.
-    struct ODEnableUser: Equatable, Codable {
+    struct ODEnableUser: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1573,7 +1573,7 @@ public extension ESEvent {
     /// - Note: Attributes conceptually have the type `Map String (Set String)`.
     /// Each OD record has a Map of attribute name to Set of attribute value.
     /// When an attribute value is added, it is inserted into the set of values for that name.
-    struct ODAttributeValueAdd: Equatable, Codable {
+    struct ODAttributeValueAdd: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1624,7 +1624,7 @@ public extension ESEvent {
     /// When an attribute value is removed, it is subtraced from the set of values for that name.
     ///
     /// - Note: Removing a value that was never added is a no-op.
-    struct ODAttributeValueRemove: Equatable, Codable {
+    struct ODAttributeValueRemove: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1675,7 +1675,7 @@ public extension ESEvent {
     /// An attribute set operation indicates the entire set of attribute values was replaced.
     ///
     /// - Note: The new set of attribute values may be empty.
-    struct ODAttributeSet: Equatable, Codable {
+    struct ODAttributeSet: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1720,7 +1720,7 @@ public extension ESEvent {
     }
     
     /// Notification that a user account was created.
-    struct ODCreateUser: Equatable, Codable {
+    struct ODCreateUser: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1753,7 +1753,7 @@ public extension ESEvent {
     }
     
     /// Notification that a group was created.
-    struct ODCreateGroup: Equatable, Codable {
+    struct ODCreateGroup: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1786,7 +1786,7 @@ public extension ESEvent {
     }
     
     /// Notification that a user account was deleted.
-    struct ODDeleteUser: Equatable, Codable {
+    struct ODDeleteUser: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1819,7 +1819,7 @@ public extension ESEvent {
     }
     
     /// Notification that a group was deleted.
-    struct ODDeleteGroup: Equatable, Codable {
+    struct ODDeleteGroup: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -1852,7 +1852,7 @@ public extension ESEvent {
     }
     
     /// Notification for an XPC connection being established to a named service.
-    struct XPCConnect: Equatable, Codable {
+    struct XPCConnect: Equatable, Codable, Sendable {
         /// Service name of the named service.
         public var serviceName: String
         
@@ -1871,7 +1871,7 @@ public extension ESEvent {
     /// - Note: Hashes are calculated in usermode by Gatekeeper. There is no guarantee that
     /// any other program including the kernel will observe the same file at the reported path.
     /// Furthermore there is no guarantee that the CDHash is valid or that it matches the containing binary.
-    struct GatekeeperUserOverride: Equatable, Codable {
+    struct GatekeeperUserOverride: Equatable, Codable, Sendable {
         /// Describes the target file that is being overridden by the user
         public var file: File
         
@@ -1884,7 +1884,7 @@ public extension ESEvent {
         /// The type of the file field.
         /// If Endpoint security can't lookup the file at event submission
         /// it will emit a path instead of an `es_file_t`.
-        public enum File: Equatable, Codable {
+        public enum File: Equatable, Codable, Sendable {
             case path(String)
             case file(ESFile)
         }

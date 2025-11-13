@@ -27,7 +27,7 @@ import SpellbookFoundation
 private let log = SpellbookLogger.internalLog(.service)
 
 internal final class ESServiceSubscriptionStore {
-    final class Entry {
+    final class Entry: @unchecked Sendable {
         var subscription: ESSubscription
         var state: SubscriptionState
         
@@ -172,8 +172,8 @@ internal final class ESServiceSubscriptionStore {
     }
 }
 
-internal final class ESMultipleResolution {
-    private var lock = UnfairLock()
+internal final class ESMultipleResolution: @unchecked Sendable {
+    private let lock = UnfairLock()
     private var resolved = 0
     private var resolutions: [ESAuthResolution]
     private var resolutionsState: [Bool]
@@ -187,7 +187,7 @@ internal final class ESMultipleResolution {
     
     func resolve(_ resolution: ESAuthResolution, by subscription: Int, name: String) {
         lock.withLock {
-            guard !updateSwap(&resolutionsState[subscription], true) else {
+            guard !exchange(&resolutionsState[subscription], with: true) else {
                 log.error("Invalid multiple resolutions provided by subscription \(name)(\(subscription))", assert: true)
                 return
             }

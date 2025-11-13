@@ -21,6 +21,7 @@
 //  SOFTWARE.
 
 import Foundation
+import SpellbookFoundation
 
 public extension Process {
     /// Invoke given tool with arguments, returning executaion results in convenient form.

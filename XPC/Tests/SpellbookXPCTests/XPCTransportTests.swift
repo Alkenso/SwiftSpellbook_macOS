@@ -4,7 +4,7 @@ import SpellbookFoundation
 import SpellbookTestUtils
 import XCTest
 
-class XPCTransportTests: XCTestCase {
+class XPCTransportTests: XCTestCase, @unchecked Sendable {
     var nativeListener: NSXPCListener!
     var server: XPCTransportServer!
     var client: XPCTransportConnection!
@@ -135,10 +135,10 @@ class XPCTransportTests: XCTestCase {
         typealias Message = XPCTransportMessage<String, String>
         
         let expServerReceive = expectation(description: "server receive reply")
-        server.connectionOpened = { [weak server] peer in
-            DispatchQueue.global().async {
+        server.connectionOpened = { [weak self] peer in
+            DispatchQueue.global().async { [weak self] in
                 do {
-                    try server.get().send(to: peer.id, message: Message(request: "hello from server", reply: {
+                    try self?.server.get().send(to: peer.id, message: Message(request: "hello from server", reply: {
                         XCTAssertEqual($0.success, "hello from client")
                         expServerReceive.fulfill()
                     }))
@@ -247,10 +247,10 @@ class XPCTransportTests: XCTestCase {
     
     func test_serialOrder_client() throws {
         let count = 100
-        server.connectionOpened = { [weak server] peer in
+        server.connectionOpened = { [weak self] peer in
             for i in 0..<count {
-                DispatchQueue.main.async {
-                    try? server?.send(to: peer.id, message: i)
+                DispatchQueue.main.async { [weak self] in
+                    try? self?.server?.send(to: peer.id, message: i)
                 }
             }
         }

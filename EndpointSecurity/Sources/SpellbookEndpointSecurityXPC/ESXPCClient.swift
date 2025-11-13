@@ -31,7 +31,7 @@ private let log = SpellbookLogger.internalLog(.xpc)
 public final class ESXPCClient: ESClientProtocol {
     private let connection: ESXPCConnection
     private let delegate: ESClientXPCDelegate
-    private let syncExecutor: SynchronousExecutor
+    private let timeout: TimeInterval?
     private let connectionLock = NSRecursiveLock()
 
     // MARK: - Initialization & Activation
@@ -41,7 +41,7 @@ public final class ESXPCClient: ESClientProtocol {
         self.connection = ESXPCConnection(delegate: delegate, createConnection: createConnection)
         self.delegate = delegate
         self.name = name
-        self.syncExecutor = SynchronousExecutor(name, timeout: timeout)
+        self.timeout = timeout
     }
 
     deinit {
@@ -299,14 +299,6 @@ public final class ESXPCClient: ESClientProtocol {
         _ = try withRemoteClient(function) { client, reply in
             try body(client) { reply($0.flatMap(Result.failure) ?? .success(())) }
         }
-        
-        try connectionLock.withLock {
-            try syncExecutor.sync { callback in
-                let proxy = try connection.remoteObjectProxy { callback($0) }
-                    .get(name: "ESXPCConnection", description: "ES XPC client is not connected")
-                try body(proxy, callback)
-            }
-        }
     }
     
     private func withRemoteClient<T>(
@@ -314,11 +306,15 @@ public final class ESXPCClient: ESClientProtocol {
         body: @escaping (ESClientXPCProtocol, @escaping (Result<T, Error>) -> Void) throws -> Void
     ) throws -> T {
         try connectionLock.withLock {
-            try syncExecutor.sync { (callback: @escaping (Result<T, Error>) -> Void) in
-                let proxy = try connection.remoteObjectProxy { callback(.failure($0)) }
-                    .get(name: "ESXPCConnection", description: "ES XPC client is not connected")
-                try body(proxy, callback)
-            }
+            try synchronouslyWithCallback(timeout: timeout) { (continuation: @escaping (Result<T, Error>) -> Void) in
+                do {
+                    let proxy = try connection.remoteObjectProxy { continuation(.failure($0)) }
+                        .get(name: "ESXPCConnection", description: "ES XPC client is not connected")
+                    try body(proxy, continuation)
+                } catch {
+                    continuation(.failure(error))
+                }
+            }.get(CommonError.timedOut(what: function)).get()
         }
     }
 }

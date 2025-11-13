@@ -24,7 +24,7 @@ import EndpointSecurity
 import Foundation
 import SpellbookFoundation
 
-public struct ESSubscription {
+public struct ESSubscription: Sendable {
     internal let id: UUID
     
     public init(name: String = "ESSubscription") {
@@ -72,14 +72,14 @@ public struct ESSubscription {
     ///
     /// - Warning: Perfonamce-sensitive handler, called **synchronously** once for each process path on `queue`.
     /// Do here as minimum work as possible.
-    public var pathInterestHandler: (ESProcess) -> ESInterest = { _ in .listen() }
+    public var pathInterestHandler: @Sendable (ESProcess) -> ESInterest = { _ in .listen() }
     
     /// Handler invoked each time AUTH message is coming from EndpointSecurity.
     /// The message SHOULD be responded using the second parameter - reply block.
-    public var authMessageHandler: (ESMessage, @escaping (ESAuthResolution) -> Void) -> Void = { $1(.allow) }
+    public var authMessageHandler: @Sendable (ESMessage, @escaping (ESAuthResolution) -> Void) -> Void = { $1(.allow) }
     
     /// Handler invoked each time NOTIFY message is coming from EndpointSecurity.
-    public var notifyMessageHandler: (ESMessage) -> Void = { _ in }
+    public var notifyMessageHandler: @Sendable (ESMessage) -> Void = { _ in }
 }
 
 public final class ESSubscriptionControl {

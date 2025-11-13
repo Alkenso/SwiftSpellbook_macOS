@@ -49,7 +49,7 @@ extension ESProcess {
     }
 }
 
-private var nextMessageID: UInt64 = 1
+private nonisolated(unsafe) var nextMessageID: UInt64 = 1
 
 func createMessage(path: String, signingID: String, teamID: String, event: es_event_type_t, isAuth: Bool) -> Resource<UnsafePointer<es_message_t>> {
     let message = UnsafeMutablePointer<es_message_t>.allocate(capacity: 1)
@@ -91,13 +91,13 @@ func createMessage(path: String, signingID: String, teamID: String, event: es_ev
     message.pointee.action_type = isAuth ? ES_ACTION_TYPE_AUTH : ES_ACTION_TYPE_NOTIFY
     message.pointee.event_type = event
     
-    return .raii(message) { _ in
-        message.pointee.process.pointee.team_id.data?.deallocate()
-        message.pointee.process.pointee.signing_id.data?.deallocate()
-        message.pointee.process.pointee.executable.pointee.path.data?.deallocate()
-        message.pointee.process.pointee.executable.deallocate()
-        message.pointee.process.deallocate()
-        message.deallocate()
+    return .raii(message) { 
+        $0.pointee.process.pointee.team_id.data?.deallocate()
+        $0.pointee.process.pointee.signing_id.data?.deallocate()
+        $0.pointee.process.pointee.executable.pointee.path.data?.deallocate()
+        $0.pointee.process.pointee.executable.deallocate()
+        $0.pointee.process.deallocate()
+        $0.deallocate()
     }
 }
 

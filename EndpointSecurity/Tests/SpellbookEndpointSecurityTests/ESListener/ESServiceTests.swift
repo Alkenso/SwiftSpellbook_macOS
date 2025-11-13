@@ -6,7 +6,7 @@ import SpellbookFoundation
 import SpellbookTestUtils
 import XCTest
 
-class ESServiceTests: XCTestCase {
+class ESServiceTests: XCTestCase, @unchecked Sendable {
     static let emitQueue = DispatchQueue(label: "ESClientTest.es_native_queue")
     var es: MockESClient!
     var service = ESService()
@@ -59,9 +59,9 @@ class ESServiceTests: XCTestCase {
     func test_subscribe_unsubscribe() throws {
         var s = ESSubscription()
         s.events = [ES_EVENT_TYPE_NOTIFY_PTY_GRANT, ES_EVENT_TYPE_NOTIFY_SETUID]
-        var exp = expectation(description: "notify should not called")
+        @Atomic var exp = expectation(description: "notify should not called")
         exp.isInverted = true
-        s.notifyMessageHandler = { _ in exp.fulfill() }
+        s.notifyMessageHandler = { _ in $exp.wrappedValue.fulfill() }
         let c = service.register(s)
         
         XCTAssertNoThrow(try service.activate())
@@ -117,8 +117,8 @@ class ESServiceTests: XCTestCase {
     func test_controlDeinit() {
         var s = ESSubscription()
         s.events = [ES_EVENT_TYPE_NOTIFY_PTY_GRANT]
-        var exp = expectation(description: "notify called")
-        s.notifyMessageHandler = { _ in exp.fulfill() }
+        @Atomic var exp = expectation(description: "notify called")
+        s.notifyMessageHandler = { _ in $exp.wrappedValue.fulfill() }
         var c: ESSubscriptionControl? = service.register(s)
         XCTAssertNoThrow(try c?.subscribe())
         XCTAssertNoThrow(try service.activate())

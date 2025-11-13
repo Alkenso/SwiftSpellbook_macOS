@@ -29,7 +29,7 @@ import SpellbookBinaryParsing
 private let clientHello = Data(UUID(staticString: "fef88fd3-9f29-4632-8827-0b417472c8f2").uuidString.utf8)
 private let serverHello = Data(UUID(staticString: "071e1957-bf27-4669-961a-7e707b980740").uuidString.utf8)
 
-public struct XPCTransportPeer: Hashable {
+public struct XPCTransportPeer: Hashable, Sendable {
     public var id: UUID
     public var userInfo: Data
     public var auditToken: audit_token_t
@@ -41,7 +41,7 @@ public struct XPCTransportPeer: Hashable {
     }
 }
 
-public enum XPCTransportConnectionState: String, Hashable, CaseIterable {
+public enum XPCTransportConnectionState: String, Hashable, Sendable, CaseIterable {
     /// Connection is performing initial handshake (initial connect or reconnect).
     /// Usually a good point to prepare/reset related program state
     ///
@@ -56,7 +56,7 @@ public enum XPCTransportConnectionState: String, Hashable, CaseIterable {
     case invalidated
 }
 
-public class XPCTransportConnection {
+public class XPCTransportConnection: @unchecked Sendable {
     private let connectionQueue = DispatchQueue(label: "XPCTransportConnection.connection.queue")
     private var messageQueue = DispatchQueue(label: "XPCTransportConnection.message.queue")
     private var xpc: XPCConnectionInit?
@@ -92,12 +92,13 @@ public class XPCTransportConnection {
     public var queue = DispatchQueue(label: "XPCTransportConnection.queue")
     public var stateHandler: ((XPCTransportConnectionState) -> Void)?
     
-    public func setReceiveMessageHandler<Message: Decodable>(_ type: Message.Type = Message.self, handler: @escaping (Message) -> Void) {
+    public func setReceiveMessageHandler<Message: Decodable & Sendable>(_ type: Message.Type = Message.self, handler: @escaping (Message) -> Void) {
         let decoder = JSONDecoder()
         decoder.userInfo[.replySender] = { [weak self] in self?.sendReply(id: $0, response: $1) } as XPCTransportMessageReplySender
         
         receiveDataHandler = { [queue] in
             let value = try decoder.decode(Message.self, from: $0)
+            nonisolated(unsafe) let handler = handler
             queue.async { handler(value) }
         }
     }
@@ -150,13 +151,13 @@ public class XPCTransportConnection {
             }
             
             let encoder = JSONEncoder()
-            var replies: [XPCReply] = []
+            let replies = Synchronized<[XPCReply]>(.unfair)
             encoder.userInfo[.replyCollector] = { replies.append($0) } as XPCTransportMessageReplyCollector
             
             let data = try encoder.encode(message)
-            replies.forEach { pendingReplies[$0.id] = $0 }
+            replies.read().forEach { pendingReplies[$0.id] = $0 }
             
-            let replyIDs = replies.map(\.id)
+            let replyIDs = replies.read().map(\.id)
             self.connection
                 .remoteObjectProxy { [weak self] in self?.fulfillPendingReply(to: replyIDs, with: .failure($0)) }
                 .sendRequest(data) { [weak self] _, error in
@@ -181,6 +182,7 @@ public class XPCTransportConnection {
     fileprivate func receiveRequest(_ data: Data, confirmation: @escaping (Data?, Error?) -> Void) {
         guard !receiveClientHello(data, reply: confirmation) else { return }
         
+        nonisolated(unsafe) let confirmation = confirmation
         messageQueue.async {
             guard let receiveDataHandler = self.receiveDataHandler else {
                 confirmation(nil, CommonError.fatal("Receiving is not implemented"))
@@ -312,7 +314,7 @@ private class ExportedObject: NSObject, TransportXPC {
         self.connection = connection
     }
     
-    func sendRequest(_ data: Data, receiveConfirmation: @escaping (Data?, Error?) -> Void) {
+    func sendRequest(_ data: Data, receiveConfirmation: @escaping @Sendable (Data?, Error?) -> Void) {
         guard let connection = connection.value else {
             receiveConfirmation(nil, CommonError.unexpected("Connection is died"))
             return

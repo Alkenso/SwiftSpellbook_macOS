@@ -6,7 +6,7 @@ import SpellbookFoundation
 import SpellbookTestUtils
 import XCTest
 
-class ESClientTests: XCTestCase {
+class ESClientTests: XCTestCase, @unchecked Sendable {
     static let emitQueue = DispatchQueue(label: "ESClientTest.es_native_queue")
     var native: MockNativeClient!
     var client: ESClient!

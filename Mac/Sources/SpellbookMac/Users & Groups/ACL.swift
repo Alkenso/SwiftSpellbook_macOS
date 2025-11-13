@@ -348,7 +348,7 @@ extension ACL.Entry {
 
 // MARK: - Private
 
-public protocol _ACLValue: RawRepresentable where ACLType.RawValue == RawValue {
+public protocol _ACLValue: RawRepresentable, Sendable where ACLType.RawValue == RawValue {
     associatedtype ACLType: BridgedCEnum
     init(rawValue: RawValue)
     var rawValue: RawValue { get set }

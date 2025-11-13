@@ -53,7 +53,7 @@ extension NSCoder {
 }
 
 extension NSXPCInterface {
-    private static let defaultClasses = NSSet(array: [
+    private nonisolated(unsafe) static let defaultClasses = NSSet(array: [
         NSArray.self,
         NSString.self,
         NSValue.self,

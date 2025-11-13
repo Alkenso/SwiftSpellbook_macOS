@@ -58,7 +58,11 @@ public protocol ESClientProtocol<Message>: AnyObject {
 }
 
 extension ESClientProtocol {
-    internal func tryAction<T: RawRepresentable & Equatable & Codable>(_ action: String, success: T, body: () throws -> T) throws {
+    internal func tryAction<T: RawRepresentable & Equatable & Codable & Sendable>(
+        _ action: String,
+        success: T,
+        body: () throws -> T
+    ) throws {
         let result = try body()
         if result != success {
             throw ESError<T>(action, result: result, client: name)

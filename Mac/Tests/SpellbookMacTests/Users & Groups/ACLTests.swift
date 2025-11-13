@@ -3,7 +3,7 @@ import SpellbookMac
 import SpellbookFoundation
 import XCTest
 
-private let fm = FileManager.default
+private nonisolated(unsafe) let fm = FileManager.default
 
 class ACLTests: XCTestCase {
     let tmpRoot = TemporaryDirectory.bundle.directory(prefix: "ACLTests")

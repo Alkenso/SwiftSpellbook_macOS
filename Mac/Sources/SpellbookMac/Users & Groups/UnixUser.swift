@@ -24,7 +24,7 @@ import Foundation
 import SystemConfiguration
 import SpellbookFoundation
 
-public struct UnixUser: Codable {
+public struct UnixUser: Codable, Sendable {
     /// User's login name.
     public var name: String
     

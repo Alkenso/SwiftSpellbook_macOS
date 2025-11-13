@@ -1,6 +1,7 @@
 import SpellbookXPC
 import class SpellbookXPC.XPCListener
 
+import Combine
 import SpellbookFoundation
 import SpellbookTestUtils
 import XCTest
@@ -58,11 +59,11 @@ class XPCClientTests: XCTestCase {
     func test_reconnect() throws {
         var subscriptions: [SubscriptionToken] = []
         
-        var expStateChange = expectation(description: "Connection state changed when connected")
-        client.connectedState.subscribe { state in
+        @Atomic var expStateChange = expectation(description: "Connection state changed when connected")
+        client.connectedState.subscribe { [$expStateChange] state in
             if let state {
                 XCTAssertEqual(state, Self.testVersion)
-                expStateChange.fulfill()
+                $expStateChange.wrappedValue.fulfill()
             }
         }.store(in: &subscriptions)
         

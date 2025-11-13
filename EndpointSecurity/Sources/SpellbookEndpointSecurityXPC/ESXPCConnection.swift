@@ -28,7 +28,7 @@ import SpellbookFoundation
 
 private let log = SpellbookLogger.internalLog(.xpc)
 
-internal final class ESXPCConnection {
+internal final class ESXPCConnection: @unchecked Sendable {
     typealias ConnectResult = Result<es_new_client_result_t, Error>
     var connectionStateHandler: ((ConnectResult) -> Void)?
     var reconnectDelay: TimeInterval = 3.0

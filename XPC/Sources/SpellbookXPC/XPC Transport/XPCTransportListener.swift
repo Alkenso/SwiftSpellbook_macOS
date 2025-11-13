@@ -28,7 +28,7 @@ import SpellbookFoundation
 /// XPCTransportServer listens for incoming connections, manages them and
 /// provide interfaces to send and receive messages.
 /// XPCTransportServer performs all job of maintaining connection lifecycle.
-public class XPCTransportServer {
+public class XPCTransportServer: @unchecked Sendable {
     private let listener: XPCTransportListener
     private let connections = Synchronized<[UUID: XPCTransportConnection]>(.serial)
     private var prepareNewConnectionReceive: ((XPCTransportConnection) -> Void)?
@@ -48,7 +48,7 @@ public class XPCTransportServer {
     
     public var activeConnections: [UUID] { Array(connections.read(\.keys)) }
     
-    public func setReceiveMessageHandler<Message: Decodable>(
+    public func setReceiveMessageHandler<Message: Decodable & Sendable>(
         _ type: Message.Type = Message.self,
         handler: @escaping (XPCTransportPeer, Message) -> Void
     ) {
@@ -106,7 +106,7 @@ private extension XPCTransportConnection {
 }
 
 /// XPCTransportListener listens for incoming connections and forward them to the caller
-public class XPCTransportListener {
+public class XPCTransportListener: @unchecked Sendable {
     private let listener: XPCListener<TransportXPC, TransportXPC>
     
     public init(_ xpcInit: XPCListenerInit) {

@@ -27,7 +27,7 @@ import SpellbookFoundation
 
 private let log = SpellbookLogger.internalLog(.client)
 
-public final class ESClient: ESClientProtocol {
+public final class ESClient: ESClientProtocol, @unchecked Sendable {
     /// Initialise a new ESClient and connect to the ES subsystem. No-throw version
     /// Subscribe to some set of events
     /// - Parameters:
@@ -112,16 +112,16 @@ public final class ESClient: ESClientProtocol {
     /// Handler invoked each time AUTH message is coming from EndpointSecurity.
     /// The message SHOULD be responded using the second parameter - reply block.
     /// - Warning: The property MUST NOT be changed while the client is subscribed to any set of events.
-    public var authMessageHandler: ((ESMessagePtr, @escaping (ESAuthResolution) -> Void) -> Void)?
+    public nonisolated(unsafe) var authMessageHandler: ((ESMessagePtr, @escaping (ESAuthResolution) -> Void) -> Void)?
     
     /// Handler invoked for each AUTH message after it has been responded.
     /// Userful for statistic and post-actions.
     /// - Warning: The property MUST NOT be changed while the client is subscribed to any set of events.
-    public var postAuthMessageHandler: ((ESMessagePtr, ResponseInfo) -> Void)?
+    public nonisolated(unsafe) var postAuthMessageHandler: ((ESMessagePtr, ResponseInfo) -> Void)?
     
     /// Handler invoked each time NOTIFY message is coming from EndpointSecurity.
     /// - Warning: The property MUST NOT be changed while the client is subscribed to any set of events.
-    public var notifyMessageHandler: ((ESMessagePtr) -> Void)?
+    public nonisolated(unsafe) var notifyMessageHandler: ((ESMessagePtr) -> Void)?
     
     /// Queue where `pathInterestHandler`, `authMessageHandler`, `postAuthMessageHandler`
     /// and `notifyMessageHandler` handlers are called.
@@ -198,7 +198,7 @@ public final class ESClient: ESClientProtocol {
     /// - Warning: Perfonamce-sensitive handler, called **synchronously** once for each process path on `queue`.
     /// Do here as minimum work as possible.
     /// - Warning: The property MUST NOT be changed while the client is subscribed to any set of events. 
-    public var pathInterestHandler: ((ESProcess) -> ESInterest)?
+    public nonisolated(unsafe) var pathInterestHandler: ((ESProcess) -> ESInterest)?
     
     /// Clears the cache related to process interest by path.
     /// All processes will be re-evaluated against mute rules and `pathInterestHandler`.

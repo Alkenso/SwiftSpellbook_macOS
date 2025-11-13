@@ -27,10 +27,6 @@ import SystemConfiguration
 
 @discardableResult
 internal func runLaunchctl(_ args: [String]) throws -> String {
-    try runLaunchctlFn(args)
-}
-
-internal var runLaunchctlFn = { (_ args: [String]) throws -> String in
     let (exitCode, stdout, stderr) = Process.launch(
         tool: URL(fileURLWithPath: "/bin/launchctl"),
         arguments: args

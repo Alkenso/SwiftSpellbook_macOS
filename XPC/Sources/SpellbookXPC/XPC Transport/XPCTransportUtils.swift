@@ -24,24 +24,25 @@
 
 import Foundation
 
-struct XPCPayload {
-    let data: () throws -> Data
+struct XPCPayload: Sendable {
+    let data: @Sendable () throws -> Data
 }
 
 extension XPCPayload {
-    static func encode<T: Encodable>(_ value: T) -> Self {
+    static func encode<T: Encodable & Sendable>(_ value: T) -> Self {
         .init { try JSONEncoder().encode(value) }
     }
 }
 
-internal struct XPCReply {
+internal struct XPCReply: @unchecked Sendable {
     let id = UUID()
     let reply: (_ processingQueue: DispatchQueue, _ finalQueue: DispatchQueue, Result<Data, Error>) -> Void
 }
 
 extension XPCReply {
-    static func decode<T: Decodable>(_ type: T.Type, reply: @escaping (Result<T, Error>) -> Void) -> XPCReply {
-        self.init { processingQueue, finalQueue, rawResult in
+    static func decode<T: Decodable & Sendable>(_ type: T.Type, reply: @escaping (Result<T, Error>) -> Void) -> XPCReply {
+        nonisolated(unsafe) let reply = reply
+        return .init { processingQueue, finalQueue, rawResult in
             processingQueue.async {
                 let decodedResult = Result<T, Error> {
                     let data = try rawResult.get()
@@ -56,7 +57,7 @@ extension XPCReply {
 
 @objc(sXPCTransportXPC)
 internal protocol TransportXPC {
-    func sendRequest(_ data: Data, receiveConfirmation: @escaping (Data?, Error?) -> Void)
+    func sendRequest(_ data: Data, receiveConfirmation: @escaping @Sendable (Data?, Error?) -> Void)
     func sendReply(id: UUID, data: Data?, error: Error?)
 }
 
