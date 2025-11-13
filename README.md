@@ -2,9 +2,9 @@
 SwiftSpellbook - macOS is macOS-specific additions to [SwiftSpellbook](https://github.com/Alkenso/SwiftSpellbook) that makes development easier.
 
 <p>
-  <img src="https://img.shields.io/badge/swift-5.9-orange" />
+  <img src="https://img.shields.io/badge/swift-5.10 | 6.2-orange" />
   <img src="https://img.shields.io/badge/platforms-macOS 11-freshgreen" />
-  <img src="https://img.shields.io/badge/Xcode-15-blue" />
+  <img src="https://img.shields.io/badge/Xcode-16 | 26-blue" />
   <img src="https://github.com/Alkenso/SwiftSpellbook_macOS/actions/workflows/main.yml/badge.svg" />
 </p>
 
