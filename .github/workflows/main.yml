@@ -13,7 +13,7 @@ jobs:
         include:
           - xcode: "26.0" # Swift 6.2
             macOS: "26"
-          - xcode: "16.1" # Swift 6
+          - xcode: "16.4" # Swift 6
             macOS: "15"
       fail-fast: false
 
