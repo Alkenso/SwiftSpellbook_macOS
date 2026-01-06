@@ -22,7 +22,7 @@
 
 import SpellbookFoundation
 import Foundation
-private import s_membership
+@_implementationOnly import s_membership
 
 /// Swift wrapper around `membership.h` functional.
 public enum Membership {
