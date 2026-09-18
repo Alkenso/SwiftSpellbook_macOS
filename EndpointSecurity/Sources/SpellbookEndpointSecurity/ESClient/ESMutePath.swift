@@ -28,16 +28,14 @@ private let log = SpellbookLogger.internalLog(.client)
 
 internal final class ESMutePath {
     private let client: ESNativeClient
-    private let useAPIv12: Bool
     
     private var cache: [String: CacheEntry] = [:]
     private var pathMutes: [MutePathKey: Set<es_event_type_t>] = [:]
     private var pathMutesInverted = false
     private var lock = os_unfair_lock_s()
     
-    init(client: ESNativeClient, useAPIv12: Bool = true) {
+    init(client: ESNativeClient) {
         self.client = client
-        self.useAPIv12 = useAPIv12
     }
     
     // MARK: Ignore
@@ -86,8 +84,6 @@ internal final class ESMutePath {
     /// - `invertMuting`
     private func updateMutedIgnores(_ entry: CacheEntry, path: String, mute: Bool) {
         guard entry.muteIgnoredNatively else { return }
-        guard #available(macOS 12.0, *), useAPIv12 else { return }
-        
         if !mute {
             let unmute = (entry.ignored ?? []).subtracting(entry.muted)
             nativeUnmute(path, type: ES_MUTE_PATH_TYPE_LITERAL, events: unmute)
@@ -122,7 +118,6 @@ internal final class ESMutePath {
         }
     }
     
-    @available(macOS 12.0, *)
     func unmute(_ path: String, type: es_mute_path_type_t, events: Set<es_event_type_t>) {
         os_unfair_lock_lock(&lock)
         defer { os_unfair_lock_unlock(&lock) }
@@ -161,21 +156,12 @@ internal final class ESMutePath {
     // MARK: Mute - Native
     
     private func muteNative(_ path: String, type: es_mute_path_type_t, events: Set<es_event_type_t>) {
-        if useAPIv12, #available(macOS 12.0, *) {
-            if client.esMutePathEvents(path, type, Array(events)) != ES_RETURN_SUCCESS {
-                log.warning("Failed to mute path events: type = \(type), path = \(path)")
-            }
-        } else if events == ESEventSet.all.events {
-            if client.esMutePath(path, type) != ES_RETURN_SUCCESS {
-                log.warning("Failed to mute path: type = \(type), path = \(path)")
-            }
+        if client.esMutePathEvents(path, type, Array(events)) != ES_RETURN_SUCCESS {
+            log.warning("Failed to mute path events: type = \(type), path = \(path)")
         }
     }
     
-    @available(macOS 12.0, *)
     private func nativeUnmute(_ path: String, type: es_mute_path_type_t, events: Set<es_event_type_t>) {
-        guard useAPIv12 else { return }
-        
         if client.esUnmutePathEvents(path, type, Array(events)) != ES_RETURN_SUCCESS {
             log.warning("Failed to unmute path events: type = \(type), path = \(path)")
         }
@@ -183,7 +169,6 @@ internal final class ESMutePath {
     
     // MARK: Other
     
-    @available(macOS 13.0, *)
     func invertMuting() -> Bool {
         os_unfair_lock_lock(&lock)
         defer { os_unfair_lock_unlock(&lock) }

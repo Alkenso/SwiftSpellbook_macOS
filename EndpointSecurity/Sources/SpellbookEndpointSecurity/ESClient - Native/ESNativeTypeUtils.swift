@@ -33,6 +33,33 @@ extension es_event_exec_t {
         parse(valueFn: es_exec_env, countFn: es_exec_env_count).map(Self.dummyConverter.esString)
     }
     
+    /// Open file descriptors of the process being executed.
+    ///
+    /// The API may only return descriptions for a subset of open file descriptors; how many and
+    /// which file descriptors are available as part of exec events is not considered API and can
+    /// change between releases.
+    ///
+    /// - Note: `es_fd_t` values are copied out of the message, so they remain valid after
+    /// the originating message is released.
+    public var fds: [es_fd_t] {
+        parse(valueFn: es_exec_fd, countFn: es_exec_fd_count).map(\.pointee)
+    }
+
+#if compiler(>=6.4)
+    /// The entitlements of the process being executed, or `nil` if there are no entitlements.
+    ///
+    /// The underlying XPC dictionary is bridged to Swift values:
+    /// `Bool`, `Int64`, `UInt64`, `Double`, `String`, `Data`, `Date`, `UUID`,
+    /// `[Any]` and `[String: Any]`. An XPC null is bridged to `NSNull`.
+    /// Values with no Swift counterpart (file descriptors, shared memory, connections,
+    /// errors) are passed through as the underlying `xpc_object_t`.
+    @available(macOS 27.0, *)
+    public var entitlements: [String: Any]? {
+        withUnsafePointer(to: self) { es_exec_entitlements($0) }
+            .flatMap { xpc_get_type($0) == XPC_TYPE_DICTIONARY ? xpcDictionary($0) : nil }
+    }
+#endif
+    
     private static let dummyConverter = ESConverter(version: 0)
     
     private func parse<T>(
@@ -48,6 +75,55 @@ extension es_event_exec_t {
             }
             return values
         }
+    }
+}
+
+/// Bridges an XPC dictionary to its Swift representation.
+///
+/// Internal rather than private so the bridging rules can be unit-tested directly;
+/// reaching them through `entitlements` would need a live `es_message_t`.
+///
+/// `xpc_array_apply` / `xpc_dictionary_apply` are `XPC_NOESCAPE`, so the accumulator
+/// can safely be captured and mutated here.
+internal func xpcDictionary(_ xpc: xpc_object_t) -> [String: Any] {
+    var result: [String: Any] = [:]
+    xpc_dictionary_apply(xpc) { key, value in
+        result[String(cString: key)] = xpcValue(value)
+        return true
+    }
+    return result
+}
+
+internal func xpcArray(_ xpc: xpc_object_t) -> [Any] {
+    var result: [Any] = []
+    xpc_array_apply(xpc) { _, value in
+        result.append(xpcValue(value))
+        return true
+    }
+    return result
+}
+
+/// Anything without a Swift counterpart is returned as the underlying `xpc_object_t`,
+/// so no value is ever silently dropped.
+internal func xpcValue(_ xpc: xpc_object_t) -> Any {
+    switch xpc_get_type(xpc) {
+    case XPC_TYPE_BOOL: return xpc_bool_get_value(xpc)
+    case XPC_TYPE_INT64: return xpc_int64_get_value(xpc)
+    case XPC_TYPE_UINT64: return xpc_uint64_get_value(xpc)
+    case XPC_TYPE_DOUBLE: return xpc_double_get_value(xpc)
+    case XPC_TYPE_STRING: return xpc_string_get_string_ptr(xpc).map { String(cString: $0) } ?? xpc
+    case XPC_TYPE_UUID: return xpc_uuid_get_bytes(xpc).map { UUID(uuid: $0.withMemoryRebound(to: uuid_t.self, capacity: 1) { $0.pointee }) } ?? xpc
+    case XPC_TYPE_DICTIONARY: return xpcDictionary(xpc)
+    case XPC_TYPE_ARRAY: return xpcArray(xpc)
+    case XPC_TYPE_NULL: return NSNull()
+    case XPC_TYPE_DATA:
+        guard let bytes = xpc_data_get_bytes_ptr(xpc) else { return Data() }
+        return Data(bytes: bytes, count: xpc_data_get_length(xpc))
+    case XPC_TYPE_DATE:
+        /* xpc_date_get_value returns nanoseconds since the Unix epoch. */
+        return Date(timeIntervalSince1970: Double(xpc_date_get_value(xpc)) / 1_000_000_000)
+    default:
+        return xpc
     }
 }
 
@@ -92,6 +168,5 @@ private var fallbackLastESEvent: UInt32 {
     if #available(macOS 15.4, *) { return ES_EVENT_TYPE_NOTIFY_TCC_MODIFY.rawValue + 1 }
     if #available(macOS 15.0, *) { return ES_EVENT_TYPE_NOTIFY_GATEKEEPER_USER_OVERRIDE.rawValue + 1 }
     if #available(macOS 14.0, *) { return ES_EVENT_TYPE_NOTIFY_XPC_CONNECT.rawValue + 1 }
-    if #available(macOS 13.0, *) { return ES_EVENT_TYPE_NOTIFY_BTM_LAUNCH_ITEM_REMOVE.rawValue + 1 }
-    return ES_EVENT_TYPE_NOTIFY_COPYFILE.rawValue + 1
+    return ES_EVENT_TYPE_NOTIFY_BTM_LAUNCH_ITEM_REMOVE.rawValue + 1
 }

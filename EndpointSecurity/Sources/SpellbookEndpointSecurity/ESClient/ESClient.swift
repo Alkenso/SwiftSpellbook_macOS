@@ -241,12 +241,8 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
         case ES_MUTE_PATH_TYPE_PREFIX, ES_MUTE_PATH_TYPE_LITERAL:
             pathMutes.mute(path, type: type, events: events.events)
         default:
-            if #available(macOS 12.0, *) {
-                try tryAction("esMutePathEvents", success: ES_RETURN_SUCCESS) {
-                    client.esMutePathEvents(path, type, Array(events.events))
-                }
-            } else {
-                try tryAction("esMutePathEvents", success: ES_RETURN_SUCCESS) { ES_RETURN_ERROR }
+            try tryAction("esMutePathEvents", success: ES_RETURN_SUCCESS) {
+                client.esMutePathEvents(path, type, Array(events.events))
             }
         }
     }
@@ -256,7 +252,6 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
     ///     - mute: process path to unmute.
     ///     - type: path type.
     ///     - events: set of events to unmute.
-    @available(macOS 12.0, *)
     public func unmute(path: String, type: es_mute_path_type_t, events: ESEventSet = .all) throws {
         switch type {
         case ES_MUTE_PATH_TYPE_PREFIX, ES_MUTE_PATH_TYPE_LITERAL:
@@ -275,8 +270,7 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
         }
     }
     
-    /// Unmute all target paths. Works only for macOS 13.0+.
-    @available(macOS 13.0, *)
+    /// Unmute all target paths.
     public func unmuteAllTargetPaths() throws {
         try tryAction("esUnmuteAllTargetPaths", success: ES_RETURN_SUCCESS) {
             client.esUnmuteAllTargetPaths()
@@ -284,7 +278,6 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
     }
     
     /// Invert the mute state of a given mute dimension.
-    @available(macOS 13.0, *)
     public func invertMuting(_ muteType: es_mute_inversion_type_t) throws {
         let result: Bool
         switch muteType {
@@ -301,7 +294,6 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
     }
     
     /// Mute state of a given mute dimension.
-    @available(macOS 13.0, *)
     public func mutingInverted(_ muteType: es_mute_inversion_type_t) throws -> Bool {
         let status = client.esMutingInverted(muteType)
         switch status {

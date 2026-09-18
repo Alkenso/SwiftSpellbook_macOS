@@ -113,7 +113,6 @@ extension ESInterest {
     /// Additionally performs native muting of the path literal / process is suggested and possible.
     /// - Warning: muting natively too many paths or processes (200+) may cause performance degradation
     /// because of implementation specifics of `es_client` on some versions of macOS.
-    /// - Note: suggestNativeMuting works only on macOS 12.0+.
     public static func ignore(_ events: ESEventSet = .all, suggestNativeMuting: Bool = false) -> ESInterest {
         ESInterest(events: events.inverted().events, suggestNativeMuting: suggestNativeMuting)
     }

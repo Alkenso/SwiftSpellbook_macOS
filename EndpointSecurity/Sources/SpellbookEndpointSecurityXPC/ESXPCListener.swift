@@ -188,11 +188,7 @@ private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol, @uncheck
     }
     
     func unmute(path: String, type: es_mute_path_type_t, events: [NSNumber], reply: @escaping (Error?) -> Void) {
-        if #available(macOS 12.0, *) {
-            withClientOnActionQueue(reply: reply) { try $0.unmute(path: path, type: type, events: .fromNumbers(events)) }
-        } else {
-            reply(CommonError.unexpected("unmute(path:) not available"))
-        }
+        withClientOnActionQueue(reply: reply) { try $0.unmute(path: path, type: type, events: .fromNumbers(events)) }
     }
     
     func unmuteAllPaths(reply: @escaping (Error?) -> Void) {
@@ -200,20 +196,12 @@ private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol, @uncheck
     }
     
     func unmuteAllTargetPaths(reply: @escaping (Error?) -> Void) {
-        if #available(macOS 13.0, *) {
-            withClientOnActionQueue(reply: reply) { try $0.unmuteAllTargetPaths() }
-        } else {
-            reply(CommonError.unexpected("unmuteAllTargetPaths not available"))
-        }
+        withClientOnActionQueue(reply: reply) { try $0.unmuteAllTargetPaths() }
     }
     
     func invertMuting(_ muteType: Int, reply: @escaping (Error?) -> Void) {
-        if #available(macOS 13.0, *) {
-            withClientOnActionQueue(reply: reply) {
-                try $0.invertMuting(es_mute_inversion_type_t(rawValue: UInt32(muteType)))
-            }
-        } else {
-            reply(CommonError.unexpected("invertMuting not available"))
+        withClientOnActionQueue(reply: reply) {
+            try $0.invertMuting(es_mute_inversion_type_t(rawValue: UInt32(muteType)))
         }
     }
     
@@ -221,13 +209,9 @@ private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol, @uncheck
         nonisolated(unsafe) let reply = reply
         actionQueue.async { [self] in
             do {
-                if #available(macOS 13.0, *) {
-                    let client = try client.get(name: "ESClient")
-                    let result = try client.mutingInverted(es_mute_inversion_type_t(rawValue: UInt32(muteType)))
-                    reply(result, nil)
-                } else {
-                    throw CommonError.unexpected("mutingInverted not available")
-                }
+                let client = try client.get(name: "ESClient")
+                let result = try client.mutingInverted(es_mute_inversion_type_t(rawValue: UInt32(muteType)))
+                reply(result, nil)
             } catch {
                 reply(false, error.secureCodingCompliant())
             }

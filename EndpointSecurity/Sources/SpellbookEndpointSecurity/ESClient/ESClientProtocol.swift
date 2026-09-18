@@ -45,15 +45,11 @@ public protocol ESClientProtocol<Message>: AnyObject {
     func unmute(process rule: ESMuteProcessRule, events: ESEventSet) throws
     func unmuteAllProcesses() throws
     func mute(path: String, type: es_mute_path_type_t, events: ESEventSet) throws
-    @available(macOS 12.0, *)
     func unmute(path: String, type: es_mute_path_type_t, events: ESEventSet) throws
     func unmuteAllPaths() throws
-    @available(macOS 13.0, *)
     func unmuteAllTargetPaths() throws
     
-    @available(macOS 13.0, *)
     func invertMuting(_ muteType: es_mute_inversion_type_t) throws
-    @available(macOS 13.0, *)
     func mutingInverted(_ muteType: es_mute_inversion_type_t) throws -> Bool
 }
 

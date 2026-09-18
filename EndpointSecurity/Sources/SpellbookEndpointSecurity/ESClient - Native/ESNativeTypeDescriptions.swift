@@ -580,29 +580,19 @@ extension es_mute_path_type_t: ESNativeType {
             return "ES_MUTE_PATH_TYPE_PREFIX"
         case ES_MUTE_PATH_TYPE_LITERAL:
             return "ES_MUTE_PATH_TYPE_LITERAL"
+        case ES_MUTE_PATH_TYPE_TARGET_PREFIX:
+            return "ES_MUTE_PATH_TYPE_TARGET_PREFIX"
+        case ES_MUTE_PATH_TYPE_TARGET_LITERAL:
+            return "ES_MUTE_PATH_TYPE_TARGET_LITERAL"
         default:
-            if #available(macOS 13.0, *) {
-                switch self {
-                case ES_MUTE_PATH_TYPE_TARGET_PREFIX:
-                    return "ES_MUTE_PATH_TYPE_TARGET_PREFIX"
-                case ES_MUTE_PATH_TYPE_TARGET_LITERAL:
-                    return "ES_MUTE_PATH_TYPE_TARGET_LITERAL"
-                default:
-                    break
-                }
-            }
             return nil
         }
     }
 }
 
-@available(macOS 13.0, *)
 extension es_mute_inversion_type_t: @retroactive Decodable {}
-@available(macOS 13.0, *)
 extension es_mute_inversion_type_t: @retroactive Encodable {}
-@available(macOS 13.0, *)
 extension es_mute_inversion_type_t: @retroactive CustomStringConvertible {}
-@available(macOS 13.0, *)
 extension es_mute_inversion_type_t: ESNativeType {
     fileprivate var name: String? {
         switch self {

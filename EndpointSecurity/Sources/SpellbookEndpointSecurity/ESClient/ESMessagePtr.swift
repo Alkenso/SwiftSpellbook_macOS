@@ -26,11 +26,6 @@ import SpellbookFoundation
 
 @dynamicMemberLookup
 public final class ESMessagePtr {
-    private enum Ownership {
-        case retained
-        case unowned
-    }
-    
     public let rawMessage: UnsafePointer<es_message_t>
     private let shouldFree: Bool
     

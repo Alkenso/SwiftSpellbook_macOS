@@ -9,6 +9,7 @@ class MockNativeClient: ESNativeClient {
     }
     
     var subscriptions: Set<es_event_type_t> = []
+    var subscriptionsQueryFails = false
     var invertMuting: [es_mute_inversion_type_t: Bool] = [:]
     var pathMutes: [String: Set<es_event_type_t>] = [:]
     var prefixMutes: [String: Set<es_event_type_t>] = [:]
@@ -36,6 +37,60 @@ class MockNativeClient: ESNativeClient {
         subscriptions.removeAll()
         return ES_RETURN_SUCCESS
     }
+
+    func esSubscriptions() -> [es_event_type_t] {
+        subscriptionsQueryFails ? [] : Array(subscriptions)
+    }
+
+#if compiler(>=6.4)
+    var syncResult = ES_RETURN_SUCCESS
+
+    var pendingSyncCompletion: (() -> Void)?
+
+    var deadlineMissMode = ES_DEADLINE_MISS_MODE_KILL
+
+    var deadlineMissModeGetFails = false
+
+    var deadlineMissModeSetResult = ES_RETURN_SUCCESS
+
+    var deadlineMaxMilliseconds: [es_event_type_t: UInt32] = [:]
+
+    var deadlineMaxGetFails: Set<es_event_type_t> = []
+
+    var deadlineMaxSetResult = ES_RETURN_SUCCESS
+
+    @available(macOS 27.0, *)
+    func esSyncClient(_ completion: @escaping () -> Void) -> es_return_t {
+        guard syncResult == ES_RETURN_SUCCESS else { return syncResult }
+        pendingSyncCompletion = completion
+        return ES_RETURN_SUCCESS
+    }
+
+    @available(macOS 27.0, *)
+    func esGetDeadlineMissMode() -> es_deadline_miss_mode_t? {
+        deadlineMissModeGetFails ? nil : deadlineMissMode
+    }
+
+    @available(macOS 27.0, *)
+    func esSetDeadlineMissMode(_ mode: es_deadline_miss_mode_t) -> es_return_t {
+        guard deadlineMissModeSetResult == ES_RETURN_SUCCESS else { return deadlineMissModeSetResult }
+        deadlineMissMode = mode
+        return ES_RETURN_SUCCESS
+    }
+
+    @available(macOS 27.0, *)
+    func esGetDeadlineMaxMilliseconds(_ event: es_event_type_t) -> UInt32? {
+        guard !deadlineMaxGetFails.contains(event) else { return nil }
+        return deadlineMaxMilliseconds[event]
+    }
+
+    @available(macOS 27.0, *)
+    func esSetDeadlineMaxMilliseconds(_ events: [es_event_type_t], milliseconds: UInt32) -> es_return_t {
+        guard !events.isEmpty, deadlineMaxSetResult == ES_RETURN_SUCCESS else { return ES_RETURN_ERROR }
+        events.forEach { deadlineMaxMilliseconds[$0] = milliseconds }
+        return ES_RETURN_SUCCESS
+    }
+#endif
     
     func esClearCache() -> es_clear_cache_result_t {
         return ES_CLEAR_CACHE_RESULT_SUCCESS
@@ -113,10 +168,6 @@ class MockNativeClient: ESNativeClient {
         return ES_RETURN_SUCCESS
     }
     
-    func esMutedProcesses() -> [audit_token_t]? {
-        Array(processMutes.filter { $0.value == ESEventSet.all.events }.keys)
-    }
-    
     func esMuteProcessEvents(_ auditToken: audit_token_t, _ events: [es_event_type_t]) -> es_return_t {
         processMutes[auditToken, default: []].formUnion(events)
         return ES_RETURN_SUCCESS
@@ -131,3 +182,23 @@ class MockNativeClient: ESNativeClient {
         processMutes.mapValues { Array($0) }
     }
 }
+
+#if compiler(>=6.4)
+@available(macOS 27.0, *)
+final class MockNativeDescendantClient: MockNativeClient, ESNativeDescendantClient {
+    var deadlineMinMilliseconds: [es_event_type_t: UInt32] = [:]
+    var deadlineMinGetFails: Set<es_event_type_t> = []
+    var deadlineMinSetResult = ES_RETURN_SUCCESS
+
+    func esGetDeadlineMinMilliseconds(_ event: es_event_type_t) -> UInt32? {
+        guard !deadlineMinGetFails.contains(event) else { return nil }
+        return deadlineMinMilliseconds[event]
+    }
+
+    func esSetDeadlineMinMilliseconds(_ events: [es_event_type_t], milliseconds: UInt32) -> es_return_t {
+        guard !events.isEmpty, deadlineMinSetResult == ES_RETURN_SUCCESS else { return ES_RETURN_ERROR }
+        events.forEach { deadlineMinMilliseconds[$0] = milliseconds }
+        return ES_RETURN_SUCCESS
+    }
+}
+#endif

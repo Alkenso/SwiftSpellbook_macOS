@@ -238,7 +238,6 @@ public final class ESXPCClient: ESClientProtocol {
     ///     - mute: process path to unmute.
     ///     - type: path type.
     ///     - events: set of events to unmute.
-    @available(macOS 12.0, *)
     public func unmute(path: String, type: es_mute_path_type_t, events: ESEventSet = .all) throws {
         try withRemoteClient { client, reply in
             client.unmute(path: path, type: type, events: events.asNumbers, reply: reply)
@@ -252,8 +251,7 @@ public final class ESXPCClient: ESClientProtocol {
         }
     }
     
-    /// Unmute all target paths. Works only for macOS 13.0+.
-    @available(macOS 13.0, *)
+    /// Unmute all target paths.
     public func unmuteAllTargetPaths() throws {
         try withRemoteClient { client, reply in
             client.unmuteAllTargetPaths(reply: reply)
@@ -261,7 +259,6 @@ public final class ESXPCClient: ESClientProtocol {
     }
     
     /// Invert the mute state of a given mute dimension.
-    @available(macOS 13.0, *)
     public func invertMuting(_ muteType: es_mute_inversion_type_t) throws {
         try withRemoteClient { client, reply in
             client.invertMuting(Int(muteType.rawValue), reply: reply)
@@ -269,7 +266,6 @@ public final class ESXPCClient: ESClientProtocol {
     }
     
     /// Mute state of a given mute dimension.
-    @available(macOS 13.0, *)
     public func mutingInverted(_ muteType: es_mute_inversion_type_t) throws -> Bool {
         try withRemoteClient { client, reply in
             client.mutingInverted(Int(muteType.rawValue)) {

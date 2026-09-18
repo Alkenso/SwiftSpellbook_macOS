@@ -2,7 +2,7 @@
 
 <p>
   <img src="https://img.shields.io/badge/swift-5.7 | 5.8 | 5.9-orange" />
-  <img src="https://img.shields.io/badge/platforms-macOS 11.0-freshgreen" />
+  <img src="https://img.shields.io/badge/platforms-macOS 13.0-freshgreen" />
   <img src="https://img.shields.io/badge/Xcode-14 | 15-blue" />
   <img src="https://github.com/Alkenso/sEndpointSecurity/actions/workflows/main.yml/badge.svg" />
 </p>
@@ -67,6 +67,18 @@ guard client.subscribe([ES_EVENT_TYPE_AUTH_EXEC, ES_EVENT_TYPE_NOTIFY_EXIT]) els
 
 withExtendedLifetime(client) { RunLoop.main.run() }
 ```
+
+## Native client operations
+
+`ESNativeClient` wraps an existing native client pointer and preserves the C API's result codes for operations. `esSubscriptions()` returns the current native subscriptions, logging failures and returning an empty array.
+
+When built with the macOS 27 SDK and Swift 6.4 or newer, the wrapper also exposes `esSyncClient`, deadline miss mode get/set methods, and per-event maximum deadline get/set methods. These APIs require macOS 27 at runtime. Deadline getters log failures and return `nil`; setters log failures and return the native status. Deadline setters reject empty event arrays and pass nonempty arrays to the C API without filtering them. Setting kernel deadlines does not change `ESClient.Config.messageTimeout` or its response scheduling.
+
+`esSyncClient` runs its callback after preceding messages pass through the native handler, not after application work dispatched asynchronously. It must not be called from that client's native handler. Client deletion also invokes pending synchronization callbacks.
+
+`ESNativeDescendantClient` extends `ESNativeClient` with per-event minimum deadline get/set methods. These require a pointer created with `es_new_descendants_client`. `OpaquePointer` implements the protocol, but conformance neither validates the client kind nor takes ownership of the pointer. Minimum deadlines cannot be configured for bootstrap check-in or look-up AUTH events. Raising a minimum above its maximum raises the maximum too; lowering a maximum below its minimum lowers the minimum too.
+
+Existing `ESNativeClient` methods are retained. Custom conformers must implement the new requirements, with the macOS 27 requirements guarded by `#if compiler(>=6.4)` when supporting older SDKs.
 
 ## ES over XPC
 ### ESXPCClient

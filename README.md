@@ -3,7 +3,7 @@ SwiftSpellbook - macOS is macOS-specific additions to [SwiftSpellbook](https://g
 
 <p>
   <img src="https://img.shields.io/badge/swift-6.3 | 6.4-orange" />
-  <img src="https://img.shields.io/badge/platforms-macOS 12-freshgreen" />
+  <img src="https://img.shields.io/badge/platforms-macOS 13-freshgreen" />
   <img src="https://img.shields.io/badge/Xcode-26 | 27-blue" />
   <img src="https://github.com/Alkenso/SwiftSpellbook_macOS/actions/workflows/main.yml/badge.svg" />
 </p>

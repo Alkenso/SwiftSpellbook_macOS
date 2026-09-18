@@ -21,7 +21,10 @@
 //  SOFTWARE.
 
 import EndpointSecurity
+import Foundation
 import SpellbookFoundation
+
+private let log = SpellbookLogger.internalLog(.client)
 
 public protocol ESNativeClient {
     var native: OpaquePointer { get }
@@ -32,13 +35,39 @@ public protocol ESNativeClient {
     func esUnsubscribe(_ events: [es_event_type_t]) -> es_return_t
     func esUnsubscribeAll() -> es_return_t
     
+    /// The current native subscriptions. Logs failures and returns an empty array.
+    func esSubscriptions() -> [es_event_type_t]
+
+#if compiler(>=6.4)
+    /// Runs after messages preceding a native queue marker have been handled.
+    /// Does not wait for work dispatched asynchronously by application handlers.
+    /// Must not be called from this client's native handler. Deleting the client also runs pending callbacks.
+    @available(macOS 27.0, *)
+    func esSyncClient(_ completion: @escaping () -> Void) -> es_return_t
+
+    /// The kernel policy for missed authorization deadlines, or `nil` after logging a failure.
+    @available(macOS 27.0, *)
+    func esGetDeadlineMissMode() -> es_deadline_miss_mode_t?
+
+    /// Changes the kernel policy without changing the library's own timeout handling. Logs failures.
+    @available(macOS 27.0, *)
+    func esSetDeadlineMissMode(_ mode: es_deadline_miss_mode_t) -> es_return_t
+
+    /// The maximum deadline for an AUTH event, or `nil` after logging a failure.
+    @available(macOS 27.0, *)
+    func esGetDeadlineMaxMilliseconds(_ event: es_event_type_t) -> UInt32?
+
+    /// Sets maximum deadlines for the supplied AUTH events. Logs failures, including an empty event array.
+    /// The maximum cannot exceed the system default; lowering it below the minimum also lowers the minimum.
+    @available(macOS 27.0, *)
+    func esSetDeadlineMaxMilliseconds(_ events: [es_event_type_t], milliseconds: UInt32) -> es_return_t
+#endif
+
     func esClearCache() -> es_clear_cache_result_t
     func esDeleteClient() -> es_return_t
     
-    @available(macOS 13.0, *)
     func esInvertMuting(_ muteType: es_mute_inversion_type_t) -> es_return_t
     
-    @available(macOS 13.0, *)
     func esMutingInverted(_ muteType: es_mute_inversion_type_t) -> es_mute_inverted_return_t
     
     // MARK: Mute by Process
@@ -46,10 +75,8 @@ public protocol ESNativeClient {
     func esMuteProcess(_ auditToken: audit_token_t) -> es_return_t
     func esUnmuteProcess(_ auditToken: audit_token_t) -> es_return_t
     
-    @available(macOS 12.0, *)
     func esMuteProcessEvents(_ auditToken: audit_token_t, _ events: [es_event_type_t]) -> es_return_t
     
-    @available(macOS 12.0, *)
     func esUnmuteProcessEvents(_ auditToken: audit_token_t, _ events: [es_event_type_t]) -> es_return_t
     
     func esMutedProcesses() -> [audit_token_t: [es_event_type_t]]
@@ -58,21 +85,16 @@ public protocol ESNativeClient {
     
     func esMutePath(_ path: String, _ type: es_mute_path_type_t) -> es_return_t
     
-    @available(macOS 12.0, *)
     func esUnmutePath(_ path: String, _ type: es_mute_path_type_t) -> es_return_t
     
-    @available(macOS 12.0, *)
     func esMutePathEvents(_ path: String, _ type: es_mute_path_type_t, _ events: [es_event_type_t]) -> es_return_t
     
-    @available(macOS 12.0, *)
     func esUnmutePathEvents(_ path: String, _ type: es_mute_path_type_t, _ events: [es_event_type_t]) -> es_return_t
     
     func esUnmuteAllPaths() -> es_return_t
     
-    @available(macOS 13.0, *)
     func esUnmuteAllTargetPaths() -> es_return_t
     
-    @available(macOS 12.0, *)
     func esMutedPaths() -> [(path: String, type: es_mute_path_type_t, events: [es_event_type_t])]
 }
 
@@ -99,6 +121,68 @@ extension OpaquePointer: ESNativeClient {
         withValidRawEvents(events) { es_unsubscribe(self, $0, $1) }
     }
     
+    public func esSubscriptions() -> [es_event_type_t] {
+        var count = 0
+        var subscriptions = UnsafeMutablePointer<es_event_type_t>(bitPattern: 0xdeadbeef)!
+        let result = es_subscriptions(self, &count, &subscriptions)
+        guard result == ES_RETURN_SUCCESS else {
+            log.warning("Failed to query subscriptions: \(result)")
+            return []
+        }
+        defer { free(subscriptions) }
+        return Array(UnsafeBufferPointer(start: subscriptions, count: count))
+    }
+
+#if compiler(>=6.4)
+    @available(macOS 27.0, *)
+    public func esSyncClient(_ completion: @escaping () -> Void) -> es_return_t {
+        es_sync_client(self, completion)
+    }
+
+    @available(macOS 27.0, *)
+    public func esGetDeadlineMissMode() -> es_deadline_miss_mode_t? {
+        var mode = ES_DEADLINE_MISS_MODE_KILL
+        let result = es_get_deadline_miss_mode(self, &mode)
+        guard result == ES_RETURN_SUCCESS else {
+            log.warning("Failed to query deadline miss mode: \(result)")
+            return nil
+        }
+        return mode
+    }
+
+    @available(macOS 27.0, *)
+    public func esSetDeadlineMissMode(_ mode: es_deadline_miss_mode_t) -> es_return_t {
+        let result = es_set_deadline_miss_mode(self, mode)
+        if result != ES_RETURN_SUCCESS {
+            log.warning("Failed to set deadline miss mode: \(result)")
+        }
+        return result
+    }
+
+    @available(macOS 27.0, *)
+    public func esGetDeadlineMaxMilliseconds(_ event: es_event_type_t) -> UInt32? {
+        var milliseconds: UInt32 = 0
+        let result = es_get_deadline_max_milliseconds(self, event, &milliseconds)
+        guard result == ES_RETURN_SUCCESS else {
+            log.warning("Failed to query maximum deadline for \(event): \(result)")
+            return nil
+        }
+        return milliseconds
+    }
+
+    @available(macOS 27.0, *)
+    public func esSetDeadlineMaxMilliseconds(_ events: [es_event_type_t], milliseconds: UInt32) -> es_return_t {
+        let result = events.withUnsafeBufferPointer { buffer in
+            guard let events = buffer.baseAddress, !buffer.isEmpty else { return ES_RETURN_ERROR }
+            return es_set_deadline_max_milliseconds(self, events, UInt32(buffer.count), milliseconds)
+        }
+        if result != ES_RETURN_SUCCESS {
+            log.warning("Failed to set maximum deadline: \(result)")
+        }
+        return result
+    }
+#endif
+
     public func esClearCache() -> es_clear_cache_result_t {
         es_clear_cache(self)
     }
@@ -107,12 +191,10 @@ extension OpaquePointer: ESNativeClient {
         es_delete_client(self)
     }
     
-    @available(macOS 13.0, *)
     public func esInvertMuting(_ muteType: es_mute_inversion_type_t) -> es_return_t {
         es_invert_muting(self, muteType)
     }
     
-    @available(macOS 13.0, *)
     public func esMutingInverted(_ muteType: es_mute_inversion_type_t) -> es_mute_inverted_return_t {
         es_muting_inverted(self, muteType)
     }
@@ -129,14 +211,12 @@ extension OpaquePointer: ESNativeClient {
         withUnsafePointer(to: auditToken) { es_unmute_process(self, $0) }
     }
     
-    @available(macOS 12.0, *)
     public func esMuteProcessEvents(_ auditToken: audit_token_t, _ events: [es_event_type_t]) -> es_return_t {
         withValidRawEvents(events) { eventsPtr, eventsCount in
             withUnsafePointer(to: auditToken) { es_mute_process_events(self, $0, eventsPtr, eventsCount) }
         }
     }
     
-    @available(macOS 12.0, *)
     public func esUnmuteProcessEvents(_ auditToken: audit_token_t, _ events: [es_event_type_t]) -> es_return_t {
         withValidRawEvents(events) { eventsPtr, eventsCount in
             withUnsafePointer(to: auditToken) { es_unmute_process_events(self, $0, eventsPtr, eventsCount) }
@@ -144,68 +224,43 @@ extension OpaquePointer: ESNativeClient {
     }
     
     public func esMutedProcesses() -> [audit_token_t: [es_event_type_t]] {
-        if #available(macOS 12.0, *) {
-            var processes: UnsafeMutablePointer<es_muted_processes_t>! = .init(bitPattern: 0xdeadbeef)!
-            guard es_muted_processes_events(self, &processes) == ES_RETURN_SUCCESS else { return [:] }
-            defer { es_release_muted_processes(processes) }
-            return Array(UnsafeBufferPointer(start: processes.pointee.processes, count: processes.pointee.count))
-                .reduce(into: [:]) {
-                    $0[$1.audit_token] = Array(UnsafeBufferPointer(start: $1.events, count: $1.event_count))
-                }
-        } else {
-            var count: Int = 0
-            var tokens = UnsafeMutablePointer<audit_token_t>(bitPattern: 0xdeadbeef)!
-            guard es_muted_processes(self, &count, &tokens) == ES_RETURN_SUCCESS else { return [:] }
-            defer { tokens.deallocate() }
-            return Array(UnsafeBufferPointer(start: tokens, count: count))
-                .reduce(into: [:]) { $0[$1] = Array(ESEventSet.all.events) }
-        }
+        var processes: UnsafeMutablePointer<es_muted_processes_t>! = .init(bitPattern: 0xdeadbeef)!
+        guard es_muted_processes_events(self, &processes) == ES_RETURN_SUCCESS else { return [:] }
+        defer { es_release_muted_processes(processes) }
+        return Array(UnsafeBufferPointer(start: processes.pointee.processes, count: processes.pointee.count))
+            .reduce(into: [:]) {
+                $0[$1.audit_token] = Array(UnsafeBufferPointer(start: $1.events, count: $1.event_count))
+            }
     }
     
     public func esMutePath(_ path: String, _ type: es_mute_path_type_t) -> es_return_t {
-        guard #unavailable(macOS 12.0) else {
-            return es_mute_path(self, path, type)
-        }
-        
-        switch type {
-        case ES_MUTE_PATH_TYPE_PREFIX:
-            return es_mute_path_prefix(self, path)
-        case ES_MUTE_PATH_TYPE_LITERAL:
-            return es_mute_path_literal(self, path)
-        default:
-            return ES_RETURN_ERROR
-        }
+        es_mute_path(self, path, type)
     }
     
     public func esUnmuteAllPaths() -> es_return_t {
         es_unmute_all_paths(self)
     }
     
-    @available(macOS 12.0, *)
     public func esUnmutePath(_ path: String, _ type: es_mute_path_type_t) -> es_return_t {
         es_unmute_path(self, path, type)
     }
     
-    @available(macOS 12.0, *)
     public func esMutePathEvents(_ path: String, _ type: es_mute_path_type_t, _ events: [es_event_type_t]) -> es_return_t {
         withValidRawEvents(events) {
             es_mute_path_events(self, path, type, $0, $1)
         }
     }
     
-    @available(macOS 12.0, *)
     public func esUnmutePathEvents(_ path: String, _ type: es_mute_path_type_t, _ events: [es_event_type_t]) -> es_return_t {
         withValidRawEvents(events) {
             es_unmute_path_events(self, path, type, $0, $1)
         }
     }
     
-    @available(macOS 13.0, *)
     public func esUnmuteAllTargetPaths() -> es_return_t {
         es_unmute_all_target_paths(self)
     }
     
-    @available(macOS 12.0, *)
     public func esMutedPaths() -> [(path: String, type: es_mute_path_type_t, events: [es_event_type_t])] {
         var paths = UnsafeMutablePointer<es_muted_paths_t>(bitPattern: 0xdeadbeef)!
         guard es_muted_paths_events(self, &paths) == ES_RETURN_SUCCESS else { return [] }

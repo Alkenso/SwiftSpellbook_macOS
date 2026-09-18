@@ -165,7 +165,6 @@ class ESClientTests: XCTestCase, @unchecked Sendable {
         waitForExpectations()
     }
     
-    @available(macOS 13.0, *)
     func test_inverted() {
         XCTAssertNoThrow(try client.invertMuting(ES_MUTE_INVERSION_TYPE_PATH))
         

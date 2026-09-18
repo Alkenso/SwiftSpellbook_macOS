@@ -96,32 +96,19 @@ internal final class ESMuteProcess: @unchecked Sendable {
     }
     
     private func muteNative(_ token: audit_token_t, events: Set<es_event_type_t>) {
-        if environment.useAPIv12, #available(macOS 12.0, *) {
-            if client.esMuteProcessEvents(token, Array(events)) != ES_RETURN_SUCCESS {
-                log.warning("Failed to mute process events: pid = \(token.pid)")
-            }
-        } else if events == ESEventSet.all.events {
-            if client.esMuteProcess(token) != ES_RETURN_SUCCESS {
-                log.warning("Failed to mute process: pid = \(token.pid)")
-            }
+        if client.esMuteProcessEvents(token, Array(events)) != ES_RETURN_SUCCESS {
+            log.warning("Failed to mute process events: pid = \(token.pid)")
         }
     }
     
     private func unmuteNative(_ token: audit_token_t, events: Set<es_event_type_t>) {
-        if environment.useAPIv12, #available(macOS 12.0, *) {
-            if client.esUnmuteProcessEvents(token, Array(events)) != ES_RETURN_SUCCESS {
-                log.warning("Failed to unmute process events: pid = \(token.pid)")
-            }
-        } else {
-            if client.esUnmuteProcess(token) != ES_RETURN_SUCCESS {
-                log.warning("Failed to unmute process: pid = \(token.pid)")
-            }
+        if client.esUnmuteProcessEvents(token, Array(events)) != ES_RETURN_SUCCESS {
+            log.warning("Failed to unmute process events: pid = \(token.pid)")
         }
     }
     
     // MARK: Other
     
-    @available(macOS 13.0, *)
     func invertMuting() -> Bool {
         lock.withLock {
             guard client.esInvertMuting(ES_MUTE_INVERSION_TYPE_PROCESS) == ES_RETURN_SUCCESS else { return false }
@@ -133,7 +120,6 @@ internal final class ESMuteProcess: @unchecked Sendable {
 
 extension ESMuteProcess {
     internal struct Environment {
-        var useAPIv12 = true
         var checkAlive: (audit_token_t) -> Bool = { $0.checkAlive() }
     }
 }

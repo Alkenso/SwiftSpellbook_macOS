@@ -294,7 +294,6 @@ public final class ESService: ESServiceRegistering {
     ///     - mute: process path to unmute.
     ///     - type: path type.
     ///     - events: set of events to unmute.
-    @available(macOS 12.0, *)
     public func unmute(path: String, type: es_mute_path_type_t, events: ESEventSet = .all) throws {
         try withActiveClient { try $0.unmute(path: path, type: type, events: events) }
     }
@@ -304,14 +303,12 @@ public final class ESService: ESServiceRegistering {
         try withActiveClient { try $0.unmuteAllPaths() }
     }
     
-    /// Unmute all target paths. Works only for macOS 13.0+.
-    @available(macOS 13.0, *)
+    /// Unmute all target paths.
     public func unmuteAllTargetPaths() throws {
         try withActiveClient { try $0.unmuteAllTargetPaths() }
     }
     
     /// Invert the mute state of a given mute dimension.
-    @available(macOS 13.0, *)
     public func invertMuting(_ muteType: es_mute_inversion_type_t) throws {
         try withActiveClient { try $0.invertMuting(muteType) }
     }
