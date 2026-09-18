@@ -36,7 +36,10 @@ let package = Package(
                 "s_membership",
                 .product(name: "SpellbookFoundation", package: "SwiftSpellbook")
             ],
-            path: "Mac/Sources/SpellbookMac"
+            path: "Mac/Sources/SpellbookMac",
+            swiftSettings: [
+                .enableExperimentalFeature("CheckImplementationOnly")
+            ],
         ),
         .testTarget(
             name: "SpellbookMacTests",
