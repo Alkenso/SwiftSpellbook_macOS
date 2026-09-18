@@ -256,6 +256,33 @@ public final class ESService: ESServiceRegistering {
         try client.clearPathInterestCache()
         try client.clearCache()
     }
+
+    /// Return the event types subscribed by the underlying client.
+    public func subscriptions() throws -> [es_event_type_t] {
+        try withActiveClient { try $0.subscriptions() }
+    }
+
+#if compiler(>=6.4)
+    @available(macOS 27.0, *)
+    public func getDeadlineMissMode() throws -> es_deadline_miss_mode_t {
+        try withActiveClient { try $0.getDeadlineMissMode() }
+    }
+
+    @available(macOS 27.0, *)
+    public func setDeadlineMissMode(_ mode: es_deadline_miss_mode_t) throws {
+        try withActiveClient { try $0.setDeadlineMissMode(mode) }
+    }
+
+    @available(macOS 27.0, *)
+    public func getDeadlineMaxMilliseconds(_ event: es_event_type_t) throws -> UInt32 {
+        try withActiveClient { try $0.getDeadlineMaxMilliseconds(event) }
+    }
+
+    @available(macOS 27.0, *)
+    public func setDeadlineMaxMilliseconds(_ events: [es_event_type_t], milliseconds: UInt32) throws {
+        try withActiveClient { try $0.setDeadlineMaxMilliseconds(events, milliseconds: milliseconds) }
+    }
+#endif
     
     // MARK: Mute
     
@@ -313,9 +340,9 @@ public final class ESService: ESServiceRegistering {
         try withActiveClient { try $0.invertMuting(muteType) }
     }
     
-    private func withActiveClient(_ function: String = #function, body: @escaping (Client) throws -> Void) throws {
+    private func withActiveClient<T>(_ function: String = #function, body: (Client) throws -> T) throws -> T {
         if let client {
-            try body(client)
+            return try body(client)
         } else {
             throw CommonError.unexpected("Trying to call \(function) on non-activated ESService")
         }

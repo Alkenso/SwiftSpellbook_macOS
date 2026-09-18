@@ -36,6 +36,7 @@ public protocol ESClientProtocol<Message>: AnyObject {
     func subscribe(_ events: [es_event_type_t]) throws
     func unsubscribe(_ events: [es_event_type_t]) throws
     func unsubscribeAll() throws
+    func subscriptions() throws -> [es_event_type_t]
     func clearCache() throws
     
     var pathInterestHandler: ((ESProcess) -> ESInterest)? { get set }
@@ -51,6 +52,23 @@ public protocol ESClientProtocol<Message>: AnyObject {
     
     func invertMuting(_ muteType: es_mute_inversion_type_t) throws
     func mutingInverted(_ muteType: es_mute_inversion_type_t) throws -> Bool
+    
+#if compiler(>=6.4)
+    @available(macOS 27.0, *)
+    func getDeadlineMissMode() throws -> es_deadline_miss_mode_t
+
+    /// Changes the kernel policy without changing the library's own timeout handling.
+    @available(macOS 27.0, *)
+    func setDeadlineMissMode(_ mode: es_deadline_miss_mode_t) throws
+
+    @available(macOS 27.0, *)
+    func getDeadlineMaxMilliseconds(_ event: es_event_type_t) throws -> UInt32
+
+    /// Sets the maximum deadline for the supplied AUTH events. Empty arrays are rejected.
+    /// Lowering a maximum below its minimum also lowers the minimum.
+    @available(macOS 27.0, *)
+    func setDeadlineMaxMilliseconds(_ events: [es_event_type_t], milliseconds: UInt32) throws
+#endif
 }
 
 extension ESClientProtocol {

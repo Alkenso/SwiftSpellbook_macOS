@@ -99,20 +99,61 @@ class ESServiceTests: XCTestCase, @unchecked Sendable {
         
         try service.activate()
         
-        XCTAssertEqual(es.subscriptions, [])
+        XCTAssertEqual(es.subscribedEvents, [])
         
         try c1.subscribe()
-        XCTAssertEqual(es.subscriptions, [ES_EVENT_TYPE_NOTIFY_OPEN, ES_EVENT_TYPE_NOTIFY_CLOSE])
+        XCTAssertEqual(es.subscribedEvents, [ES_EVENT_TYPE_NOTIFY_OPEN, ES_EVENT_TYPE_NOTIFY_CLOSE])
         
         try c2.subscribe()
-        XCTAssertEqual(es.subscriptions, [ES_EVENT_TYPE_NOTIFY_OPEN, ES_EVENT_TYPE_NOTIFY_CLOSE, ES_EVENT_TYPE_NOTIFY_EXIT])
+        XCTAssertEqual(es.subscribedEvents, [ES_EVENT_TYPE_NOTIFY_OPEN, ES_EVENT_TYPE_NOTIFY_CLOSE, ES_EVENT_TYPE_NOTIFY_EXIT])
         
         try c1.unsubscribe()
-        XCTAssertEqual(es.subscriptions, [ES_EVENT_TYPE_NOTIFY_OPEN, ES_EVENT_TYPE_NOTIFY_EXIT])
+        XCTAssertEqual(es.subscribedEvents, [ES_EVENT_TYPE_NOTIFY_OPEN, ES_EVENT_TYPE_NOTIFY_EXIT])
         
         try c2.unsubscribe()
-        XCTAssertEqual(es.subscriptions, [])
+        XCTAssertEqual(es.subscribedEvents, [])
     }
+
+    func test_subscriptionsForwardedAndInactiveFails() throws {
+        XCTAssertThrowsError(try service.subscriptions())
+
+        try service.activate()
+        es.subscribedEvents = [ES_EVENT_TYPE_NOTIFY_OPEN, ES_EVENT_TYPE_NOTIFY_EXEC]
+        XCTAssertEqual(Set(try service.subscriptions()), es.subscribedEvents)
+
+        es.subscriptionsError = MockESClient.MockError.requestedFailure
+        XCTAssertThrowsError(try service.subscriptions())
+
+        service.invalidate()
+        XCTAssertThrowsError(try service.subscriptions())
+    }
+
+#if compiler(>=6.4)
+    @available(macOS 27.0, *)
+    func test_deadlineOperationsForwardAndReportErrors() throws {
+        XCTAssertThrowsError(try service.getDeadlineMissMode())
+        XCTAssertThrowsError(try service.setDeadlineMissMode(ES_DEADLINE_MISS_MODE_FAIL_CLOSED))
+        XCTAssertThrowsError(try service.getDeadlineMaxMilliseconds(ES_EVENT_TYPE_AUTH_OPEN))
+        XCTAssertThrowsError(try service.setDeadlineMaxMilliseconds([ES_EVENT_TYPE_AUTH_OPEN], milliseconds: 250))
+
+        try service.activate()
+        XCTAssertEqual(try service.getDeadlineMissMode(), ES_DEADLINE_MISS_MODE_KILL)
+        try service.setDeadlineMissMode(ES_DEADLINE_MISS_MODE_FAIL_CLOSED)
+        XCTAssertEqual(es.deadlineMissMode, ES_DEADLINE_MISS_MODE_FAIL_CLOSED)
+
+        let events = [ES_EVENT_TYPE_AUTH_OPEN, ES_EVENT_TYPE_AUTH_EXEC]
+        try service.setDeadlineMaxMilliseconds(events, milliseconds: 250)
+        XCTAssertEqual(try service.getDeadlineMaxMilliseconds(ES_EVENT_TYPE_AUTH_OPEN), 250)
+        XCTAssertEqual(es.deadlineMaxMilliseconds[ES_EVENT_TYPE_AUTH_EXEC], 250)
+
+        es.deadlineMissModeError = MockESClient.MockError.requestedFailure
+        XCTAssertThrowsError(try service.getDeadlineMissMode())
+        XCTAssertThrowsError(try service.setDeadlineMissMode(ES_DEADLINE_MISS_MODE_FAIL_OPEN))
+        es.deadlineMaxError = MockESClient.MockError.requestedFailure
+        XCTAssertThrowsError(try service.getDeadlineMaxMilliseconds(ES_EVENT_TYPE_AUTH_OPEN))
+        XCTAssertThrowsError(try service.setDeadlineMaxMilliseconds(events, milliseconds: 100))
+    }
+#endif
     
     func test_controlDeinit() {
         var s = ESSubscription()

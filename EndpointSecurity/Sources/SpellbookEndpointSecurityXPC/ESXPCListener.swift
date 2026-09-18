@@ -156,10 +156,67 @@ private final class ESXPCExportedObject: NSObject, ESClientXPCProtocol, @uncheck
     func unsubscribeAll(reply: @escaping (Error?) -> Void) {
         withClientOnActionQueue(reply: reply) { try $0.unsubscribeAll() }
     }
+
+    func subscriptions(reply: @escaping ([NSNumber]?, Error?) -> Void) {
+        nonisolated(unsafe) let reply = reply
+        actionQueue.async { [self] in
+            do {
+                let client = try client.get(name: "ESClient")
+                let events = client.subscriptions()
+                reply(events.map { NSNumber(value: $0.rawValue) }, nil)
+            } catch {
+                reply(nil, error.secureCodingCompliant())
+            }
+        }
+    }
     
     func clearCache(reply: @escaping (Error?) -> Void) {
         withClientOnActionQueue(reply: reply) { try $0.clearCache() }
     }
+
+#if compiler(>=6.4)
+    @available(macOS 27.0, *)
+    func getDeadlineMissMode(reply: @escaping (UInt32, Error?) -> Void) {
+        nonisolated(unsafe) let reply = reply
+        actionQueue.async { [self] in
+            do {
+                let client = try client.get(name: "ESClient")
+                let mode = try client.getDeadlineMissMode()
+                reply(UInt32(mode.rawValue), nil)
+            } catch {
+                reply(0, error.secureCodingCompliant())
+            }
+        }
+    }
+
+    @available(macOS 27.0, *)
+    func setDeadlineMissMode(_ mode: UInt32, reply: @escaping (Error?) -> Void) {
+        withClientOnActionQueue(reply: reply) {
+            try $0.setDeadlineMissMode(es_deadline_miss_mode_t(rawValue: mode))
+        }
+    }
+
+    @available(macOS 27.0, *)
+    func getDeadlineMaxMilliseconds(_ event: UInt32, reply: @escaping (UInt32, Error?) -> Void) {
+        nonisolated(unsafe) let reply = reply
+        actionQueue.async { [self] in
+            do {
+                let client = try client.get(name: "ESClient")
+                reply(try client.getDeadlineMaxMilliseconds(es_event_type_t(event)), nil)
+            } catch {
+                reply(0, error.secureCodingCompliant())
+            }
+        }
+    }
+
+    @available(macOS 27.0, *)
+    func setDeadlineMaxMilliseconds(_ events: [NSNumber], milliseconds: UInt32, reply: @escaping (Error?) -> Void) {
+        let converted = events.map(\.uint32Value).map(es_event_type_t.init(rawValue:))
+        withClientOnActionQueue(reply: reply) {
+            try $0.setDeadlineMaxMilliseconds(converted, milliseconds: milliseconds)
+        }
+    }
+#endif
     
     func clearPathInterestCache(reply: @escaping (Error?) -> Void) {
         withClientOnActionQueue(reply: reply) { $0.clearPathInterestCache() }

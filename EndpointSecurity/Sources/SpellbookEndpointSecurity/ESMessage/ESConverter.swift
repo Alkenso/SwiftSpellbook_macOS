@@ -96,7 +96,12 @@ public extension ESConverter {
     }
     
     func esProcess(_ es: es_process_t) -> ESProcess {
-        ESProcess(
+#if compiler(>=6.4)
+        let cdHashFull = version >= 11 ? esToken(es.cdhash_full) : nil /* field available only if message version >= 11 */
+#else
+        let cdHashFull: Data? = nil
+#endif
+        return ESProcess(
             auditToken: es.audit_token,
             ppid: es.ppid,
             originalPpid: es.original_ppid,
@@ -114,7 +119,7 @@ public extension ESConverter {
             responsibleAuditToken: version >= 4 ? es.responsible_audit_token : nil, /* field available only if message version >= 4 */
             parentAuditToken: version >= 4 ? es.parent_audit_token : nil, /* field available only if message version >= 4 */
             csValidationCategory: version >= 10 ? es.cs_validation_category : nil, /* field available only if message version >= 10 */
-            cdHashFull: version >= 11 ? esToken(es.cdhash_full) : nil /* field available only if message version >= 11 */
+            cdHashFull: cdHashFull
         )
     }
     
@@ -1314,8 +1319,6 @@ public extension ESConverter {
         )
     }
     
-    /// All fields of this event were introduced together with the event itself
-    /// (macOS 15.4), so none of them carry a message-version gate of their own.
     func esEvent(tccModify es: es_event_tcc_modify_t) -> ESEvent.TCCModify {
         .init(
             service: esString(es.service),

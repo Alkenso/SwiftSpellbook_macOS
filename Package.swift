@@ -55,6 +55,7 @@ let package = Package(
         .target(
             name: "SpellbookEndpointSecurity",
             dependencies: [
+                "SpellbookMac",
                 .product(name: "SpellbookFoundation", package: "SwiftSpellbook")
             ],
             path: "EndpointSecurity/Sources/SpellbookEndpointSecurity",

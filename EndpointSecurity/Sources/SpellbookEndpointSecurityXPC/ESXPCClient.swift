@@ -144,6 +144,15 @@ public final class ESXPCClient: ESClientProtocol {
             client.unsubscribeAll(reply: reply)
         }
     }
+
+    public func subscriptions() throws -> [es_event_type_t] {
+        let events: [NSNumber] = try withRemoteClient { client, reply in
+            client.subscriptions { events, error in
+                reply(Result(success: events, failure: error))
+            }
+        }
+        return events.map { es_event_type_t($0.uint32Value) }
+    }
     
     /// Clear all cached results for all clients.
     /// - Parameters:
@@ -153,6 +162,49 @@ public final class ESXPCClient: ESClientProtocol {
             client.clearCache(reply: reply)
         }
     }
+
+#if compiler(>=6.4)
+    @available(macOS 27.0, *)
+    public func getDeadlineMissMode() throws -> es_deadline_miss_mode_t {
+        let mode: UInt32 = try withRemoteClient { client, reply in
+            client.getDeadlineMissMode { mode, error in
+                if let error {
+                    reply(.failure(error))
+                } else {
+                    reply(.success(mode))
+                }
+            }
+        }
+        return es_deadline_miss_mode_t(rawValue: mode)
+    }
+
+    @available(macOS 27.0, *)
+    public func setDeadlineMissMode(_ mode: es_deadline_miss_mode_t) throws {
+        try withRemoteClient { client, reply in
+            client.setDeadlineMissMode(UInt32(mode.rawValue), reply: reply)
+        }
+    }
+
+    @available(macOS 27.0, *)
+    public func getDeadlineMaxMilliseconds(_ event: es_event_type_t) throws -> UInt32 {
+        try withRemoteClient { client, reply in
+            client.getDeadlineMaxMilliseconds(event.rawValue) { milliseconds, error in
+                if let error {
+                    reply(.failure(error))
+                } else {
+                    reply(.success(milliseconds))
+                }
+            }
+        }
+    }
+
+    @available(macOS 27.0, *)
+    public func setDeadlineMaxMilliseconds(_ events: [es_event_type_t], milliseconds: UInt32) throws {
+        try withRemoteClient { client, reply in
+            client.setDeadlineMaxMilliseconds(events.map { NSNumber(value: $0.rawValue) }, milliseconds: milliseconds, reply: reply)
+        }
+    }
+#endif
     
     // MARK: Interest
     

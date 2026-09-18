@@ -22,6 +22,7 @@
 
 import EndpointSecurity
 import Foundation
+import SpellbookMac
 import SpellbookFoundation
 
 extension es_event_exec_t {
@@ -55,8 +56,9 @@ extension es_event_exec_t {
     /// errors) are passed through as the underlying `xpc_object_t`.
     @available(macOS 27.0, *)
     public var entitlements: [String: Any]? {
-        withUnsafePointer(to: self) { es_exec_entitlements($0) }
-            .flatMap { xpc_get_type($0) == XPC_TYPE_DICTIONARY ? xpcDictionary($0) : nil }
+        withUnsafePointer(to: self) {
+            es_exec_entitlements($0).flatMap { xpc_to_swift($0) as? [String: Any] }
+        }
     }
 #endif
     
@@ -75,55 +77,6 @@ extension es_event_exec_t {
             }
             return values
         }
-    }
-}
-
-/// Bridges an XPC dictionary to its Swift representation.
-///
-/// Internal rather than private so the bridging rules can be unit-tested directly;
-/// reaching them through `entitlements` would need a live `es_message_t`.
-///
-/// `xpc_array_apply` / `xpc_dictionary_apply` are `XPC_NOESCAPE`, so the accumulator
-/// can safely be captured and mutated here.
-internal func xpcDictionary(_ xpc: xpc_object_t) -> [String: Any] {
-    var result: [String: Any] = [:]
-    xpc_dictionary_apply(xpc) { key, value in
-        result[String(cString: key)] = xpcValue(value)
-        return true
-    }
-    return result
-}
-
-internal func xpcArray(_ xpc: xpc_object_t) -> [Any] {
-    var result: [Any] = []
-    xpc_array_apply(xpc) { _, value in
-        result.append(xpcValue(value))
-        return true
-    }
-    return result
-}
-
-/// Anything without a Swift counterpart is returned as the underlying `xpc_object_t`,
-/// so no value is ever silently dropped.
-internal func xpcValue(_ xpc: xpc_object_t) -> Any {
-    switch xpc_get_type(xpc) {
-    case XPC_TYPE_BOOL: return xpc_bool_get_value(xpc)
-    case XPC_TYPE_INT64: return xpc_int64_get_value(xpc)
-    case XPC_TYPE_UINT64: return xpc_uint64_get_value(xpc)
-    case XPC_TYPE_DOUBLE: return xpc_double_get_value(xpc)
-    case XPC_TYPE_STRING: return xpc_string_get_string_ptr(xpc).map { String(cString: $0) } ?? xpc
-    case XPC_TYPE_UUID: return xpc_uuid_get_bytes(xpc).map { UUID(uuid: $0.withMemoryRebound(to: uuid_t.self, capacity: 1) { $0.pointee }) } ?? xpc
-    case XPC_TYPE_DICTIONARY: return xpcDictionary(xpc)
-    case XPC_TYPE_ARRAY: return xpcArray(xpc)
-    case XPC_TYPE_NULL: return NSNull()
-    case XPC_TYPE_DATA:
-        guard let bytes = xpc_data_get_bytes_ptr(xpc) else { return Data() }
-        return Data(bytes: bytes, count: xpc_data_get_length(xpc))
-    case XPC_TYPE_DATE:
-        /* xpc_date_get_value returns nanoseconds since the Unix epoch. */
-        return Date(timeIntervalSince1970: Double(xpc_date_get_value(xpc)) / 1_000_000_000)
-    default:
-        return xpc
     }
 }
 

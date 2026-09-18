@@ -161,6 +161,11 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
         }
     }
     
+    /// Current native subscriptions. Native query failures are logged and return an empty array.
+    public func subscriptions() -> [es_event_type_t] {
+        client.esSubscriptions()
+    }
+    
     /// Clear all cached results for all clients.
     /// - Parameters:
     ///     - returns: es_clear_cache_result_t value indicating success or an error
@@ -169,7 +174,7 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
             client.esClearCache()
         }
     }
-    
+
     // MARK: Interest
     
     /// Perform process filtering, additionally to muting of path and processes.
@@ -305,6 +310,38 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
             throw ESError<es_mute_inverted_return_t>("mutingInverted(\(muteType))", result: status, client: name)
         }
     }
+    
+#if compiler(>=6.4)
+    @available(macOS 27.0, *)
+    public func getDeadlineMissMode() throws -> es_deadline_miss_mode_t {
+        guard let mode = client.esGetDeadlineMissMode() else {
+            throw ESError("getDeadlineMissMode", result: ES_RETURN_ERROR, client: name)
+        }
+        return mode
+    }
+
+    @available(macOS 27.0, *)
+    public func setDeadlineMissMode(_ mode: es_deadline_miss_mode_t) throws {
+        try tryAction("setDeadlineMissMode", success: ES_RETURN_SUCCESS) {
+            client.esSetDeadlineMissMode(mode)
+        }
+    }
+
+    @available(macOS 27.0, *)
+    public func getDeadlineMaxMilliseconds(_ event: es_event_type_t) throws -> UInt32 {
+        guard let milliseconds = client.esGetDeadlineMaxMilliseconds(event) else {
+            throw ESError("getDeadlineMaxMilliseconds", result: ES_RETURN_ERROR, client: name)
+        }
+        return milliseconds
+    }
+
+    @available(macOS 27.0, *)
+    public func setDeadlineMaxMilliseconds(_ events: [es_event_type_t], milliseconds: UInt32) throws {
+        try tryAction("setDeadlineMaxMilliseconds", success: ES_RETURN_SUCCESS) {
+            client.esSetDeadlineMaxMilliseconds(events, milliseconds: milliseconds)
+        }
+    }
+#endif
     
     // MARK: Private
 

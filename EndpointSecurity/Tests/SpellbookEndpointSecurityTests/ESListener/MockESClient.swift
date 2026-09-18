@@ -13,19 +13,69 @@ class MockESClient: ESClientProtocol {
     var postAuthMessageHandler: ((ESMessagePtr, ESClient.ResponseInfo) -> Void)?
     var notifyMessageHandler: ((ESMessagePtr) -> Void)?
     
-    var subscriptions: Set<es_event_type_t> = []
+    enum MockError: Error {
+        case requestedFailure
+    }
+
+    var subscribedEvents: Set<es_event_type_t> = []
+    var subscriptionsError: Error?
     
     func subscribe(_ events: [es_event_type_t]) {
-        subscriptions.formUnion(events)
+        subscribedEvents.formUnion(events)
     }
     
     func unsubscribe(_ events: [es_event_type_t]) {
-        subscriptions.subtract(events)
+        subscribedEvents.subtract(events)
     }
     
     func unsubscribeAll() {
-        subscriptions.removeAll()
+        subscribedEvents.removeAll()
     }
+
+    func subscriptions() throws -> [es_event_type_t] {
+        if let subscriptionsError { throw subscriptionsError }
+        return Array(subscribedEvents)
+    }
+
+#if compiler(>=6.4)
+    var pendingSyncCompletion: ((Result<Void, Error>) -> Void)?
+    var deadlineMissMode = ES_DEADLINE_MISS_MODE_KILL
+    var deadlineMissModeError: Error?
+    var deadlineMaxMilliseconds: [es_event_type_t: UInt32] = [:]
+    var deadlineMaxError: Error?
+
+    @available(macOS 27.0, *)
+    func sync(_ completion: @escaping (Result<Void, Error>) -> Void) {
+        pendingSyncCompletion = completion
+    }
+
+    @available(macOS 27.0, *)
+    func getDeadlineMissMode() throws -> es_deadline_miss_mode_t {
+        if let deadlineMissModeError { throw deadlineMissModeError }
+        return deadlineMissMode
+    }
+
+    @available(macOS 27.0, *)
+    func setDeadlineMissMode(_ mode: es_deadline_miss_mode_t) throws {
+        if let deadlineMissModeError { throw deadlineMissModeError }
+        deadlineMissMode = mode
+    }
+
+    @available(macOS 27.0, *)
+    func getDeadlineMaxMilliseconds(_ event: es_event_type_t) throws -> UInt32 {
+        if let deadlineMaxError { throw deadlineMaxError }
+        guard let milliseconds = deadlineMaxMilliseconds[event] else { throw MockError.requestedFailure }
+        return milliseconds
+    }
+
+    @available(macOS 27.0, *)
+    func setDeadlineMaxMilliseconds(_ events: [es_event_type_t], milliseconds: UInt32) throws {
+        if let deadlineMaxError { throw deadlineMaxError }
+        for event in events {
+            deadlineMaxMilliseconds[event] = milliseconds
+        }
+    }
+#endif
     
     func clearCache() {}
     

@@ -42,7 +42,19 @@ internal protocol ESClientXPCProtocol {
     func subscribe(_ events: [NSNumber], reply: @escaping (Error?) -> Void)
     func unsubscribe(_ events: [NSNumber], reply: @escaping (Error?) -> Void)
     func unsubscribeAll(reply: @escaping (Error?) -> Void)
+    func subscriptions(reply: @escaping ([NSNumber]?, Error?) -> Void)
     func clearCache(reply: @escaping (Error?) -> Void)
+
+#if compiler(>=6.4)
+    @available(macOS 27.0, *)
+    func getDeadlineMissMode(reply: @escaping (UInt32, Error?) -> Void)
+    @available(macOS 27.0, *)
+    func setDeadlineMissMode(_ mode: UInt32, reply: @escaping (Error?) -> Void)
+    @available(macOS 27.0, *)
+    func getDeadlineMaxMilliseconds(_ event: UInt32, reply: @escaping (UInt32, Error?) -> Void)
+    @available(macOS 27.0, *)
+    func setDeadlineMaxMilliseconds(_ events: [NSNumber], milliseconds: UInt32, reply: @escaping (Error?) -> Void)
+#endif
     
     func invertMuting(_ muteType: Int, reply: @escaping (Error?) -> Void)
     func mutingInverted(_ muteType: Int, reply: @escaping (Bool, Error?) -> Void)
@@ -62,6 +74,8 @@ internal protocol ESClientXPCDelegateProtocol {
 extension NSXPCInterface {
     internal static var esClient: NSXPCInterface {
         let interface = NSXPCInterface(with: ESClientXPCProtocol.self)
+        let subscriptionClasses = NSSet(array: [NSArray.self, NSNumber.self]) as! Set<AnyHashable>
+        interface.setClasses(subscriptionClasses, for: #selector(ESClientXPCProtocol.subscriptions(reply:)), argumentIndex: 0, ofReply: true)
         return interface
     }
     
