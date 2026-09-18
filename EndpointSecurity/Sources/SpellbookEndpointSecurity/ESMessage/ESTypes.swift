@@ -75,7 +75,16 @@ public struct ESProcess: Equatable, Codable, Sendable {
     public var responsibleAuditToken: audit_token_t? /* field available only if message version >= 4 */
     public var parentAuditToken: audit_token_t? /* field available only if message version >= 4 */
     
-    public init(auditToken: audit_token_t, ppid: pid_t, originalPpid: pid_t, groupID: pid_t, sessionID: pid_t, codesigningFlags: UInt32, isPlatformBinary: Bool, isESClient: Bool, cdHash: Data, signingID: String, teamID: String, executable: ESFile, tty: ESFile?, startTime: timeval?, responsibleAuditToken: audit_token_t?, parentAuditToken: audit_token_t?) {
+    /// The code signature validation policy that was applied to the binary.
+    public var csValidationCategory: es_cs_validation_category_t? /* field available only if message version >= 10 */
+    
+    /// Full Code Directory Hash.
+    ///
+    /// `cdHash` captures only the first 20 bytes of the real CDHash of the process.
+    /// This field contains the full CDHash, the length and algorithm of which is subject to change.
+    public var cdHashFull: Data? /* field available only if message version >= 11 */
+    
+    public init(auditToken: audit_token_t, ppid: pid_t, originalPpid: pid_t, groupID: pid_t, sessionID: pid_t, codesigningFlags: UInt32, isPlatformBinary: Bool, isESClient: Bool, cdHash: Data, signingID: String, teamID: String, executable: ESFile, tty: ESFile?, startTime: timeval?, responsibleAuditToken: audit_token_t?, parentAuditToken: audit_token_t?, csValidationCategory: es_cs_validation_category_t? = nil, cdHashFull: Data? = nil) {
         self.auditToken = auditToken
         self.ppid = ppid
         self.originalPpid = originalPpid
@@ -92,6 +101,8 @@ public struct ESProcess: Equatable, Codable, Sendable {
         self.startTime = startTime
         self.responsibleAuditToken = responsibleAuditToken
         self.parentAuditToken = parentAuditToken
+        self.csValidationCategory = csValidationCategory
+        self.cdHashFull = cdHashFull
     }
 }
 
@@ -144,6 +155,24 @@ public struct ESSignedFileInfo: Equatable, Codable, Sendable {
     
     public init(cdHash: Data, teamID: String, signingID: String) {
         self.cdHash = cdHash
+        self.teamID = teamID
+        self.signingID = signingID
+    }
+}
+
+/// Identity facts carried by a Lightweight Code Requirement (LWCR).
+///
+/// A LWCR need not carry every fact. A `nil` field means the LWCR did not carry
+/// that fact at all, which is distinct from an empty string (the fact was carried
+/// but its value was empty).
+public struct ESLightweightCodeRequirement: Equatable, Codable, Sendable {
+    /// Team Identifier from the LWCR.
+    public var teamID: String?
+    
+    /// Signing Identifier from the LWCR.
+    public var signingID: String?
+    
+    public init(teamID: String?, signingID: String?) {
         self.teamID = teamID
         self.signingID = signingID
     }
@@ -213,6 +242,8 @@ public enum ESEvent: Equatable, Codable, Sendable {
     case authentication(Authentication)
     case authorizationJudgement(AuthorizationJudgement)
     case authorizationPetition(AuthorizationPetition)
+    case bootstrapCheckIn(BootstrapCheckIn)
+    case bootstrapLookUp(BootstrapLookUp)
     case btmLaunchItemAdd(BTMLaunchItemAdd)
     case btmLaunchItemRemove(BTMLaunchItemRemove)
     case chdir(Chdir)
@@ -296,6 +327,7 @@ public enum ESEvent: Equatable, Codable, Sendable {
     case stat(Stat)
     case su(SU)
     case sudo(SUDO)
+    case tccModify(TCCModify)
     case trace(Trace)
     case truncate(Truncate)
     case uipcBind(UipcBind)
@@ -339,13 +371,13 @@ public extension ESEvent {
         
         public struct OD: Equatable, Codable, Sendable {
             public var instigator: ESProcess?
-            public var instigatorToken: audit_token_t
+            public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
             public var recordType: String
             public var recordName: String
             public var nodeName: String
             public var dbPath: String
             
-            public init(instigator: ESProcess?, instigatorToken: audit_token_t, recordType: String, recordName: String, nodeName: String, dbPath: String) {
+            public init(instigator: ESProcess?, instigatorToken: audit_token_t?, recordType: String, recordName: String, nodeName: String, dbPath: String) {
                 self.instigator = instigator
                 self.instigatorToken = instigatorToken
                 self.recordType = recordType
@@ -357,11 +389,11 @@ public extension ESEvent {
         
         public struct TouchID: Equatable, Codable, Sendable {
             public var instigator: ESProcess?
-            public var instigatorToken: audit_token_t
+            public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
             public var touchIDMode: es_touchid_mode_t
             public var uid: uid_t?
             
-            public init(instigator: ESProcess?, instigatorToken: audit_token_t, touchIDMode: es_touchid_mode_t, uid: uid_t?) {
+            public init(instigator: ESProcess?, instigatorToken: audit_token_t?, touchIDMode: es_touchid_mode_t, uid: uid_t?) {
                 self.instigator = instigator
                 self.instigatorToken = instigatorToken
                 self.touchIDMode = touchIDMode
@@ -371,12 +403,12 @@ public extension ESEvent {
         
         public struct Token: Equatable, Codable, Sendable {
             public var instigator: ESProcess?
-            public var instigatorToken: audit_token_t
+            public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
             public var pubkeyHash: String
             public var tokenID: String
             public var kerberosPrincipal: String
             
-            public init(instigator: ESProcess?, instigatorToken: audit_token_t, pubkeyHash: String, tokenID: String, kerberosPrincipal: String) {
+            public init(instigator: ESProcess?, instigatorToken: audit_token_t?, pubkeyHash: String, tokenID: String, kerberosPrincipal: String) {
                 self.instigator = instigator
                 self.instigatorToken = instigatorToken
                 self.pubkeyHash = pubkeyHash
@@ -396,15 +428,90 @@ public extension ESEvent {
         }
     }
     
+    /// A process called `bootstrap_check_in()` to register a named service port with launchd.
+    ///
+    /// Submitted by launchd on behalf of the instigator. Because launchd is the submitter,
+    /// the enclosing `ESMessage.process` describes launchd, not the process that called
+    /// `bootstrap_check_in()`. The actual caller is reported as `instigator` / `instigatorToken`.
+    struct BootstrapCheckIn: Equatable, Codable, Sendable {
+        /// The process that called `bootstrap_check_in()`.
+        /// Best-effort: may be `nil` if the instigator exited before the event was constructed.
+        public var instigator: ESProcess?
+        
+        /// Audit token of the instigator, captured by launchd at RPC time. Always present.
+        public var instigatorToken: audit_token_t
+        
+        /// The name registered by the instigator.
+        public var serviceName: String
+        
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, serviceName: String) {
+            self.instigator = instigator
+            self.instigatorToken = instigatorToken
+            self.serviceName = serviceName
+        }
+    }
+    
+    /// A process called `bootstrap_look_up()` to resolve a named service port registered with launchd.
+    ///
+    /// Submitted by launchd on behalf of the instigator. Because launchd is the submitter,
+    /// the enclosing `ESMessage.process` describes launchd, not the process that called
+    /// `bootstrap_look_up()`. The actual caller is reported as `instigator` / `instigatorToken`.
+    struct BootstrapLookUp: Equatable, Codable, Sendable {
+        /// The process that called `bootstrap_look_up()`.
+        /// Best-effort: may be `nil` if the instigator exited before the event was constructed.
+        public var instigator: ESProcess?
+        
+        /// Audit token of the instigator, captured by launchd at RPC time. Always present.
+        public var instigatorToken: audit_token_t
+        
+        /// The name the instigator asked launchd to resolve.
+        public var serviceName: String
+        
+        /// Identity of the entity that would receive messages sent to the returned port
+        /// if the lookup is allowed.
+        public var target: Target
+        
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t, serviceName: String, target: Target) {
+            self.instigator = instigator
+            self.instigatorToken = instigatorToken
+            self.serviceName = serviceName
+            self.target = target
+        }
+        
+        /// Selects between a running owner (`process`) and a lazy-launched owner (`job`).
+        public enum Target: Equatable, Codable, Sendable {
+            /// The live owner of the service.
+            ///
+            /// `target` carries the full process info including the code-signing identity
+            /// (`signingID`, `teamID`) sourced from the kernel. No identity from launchd's
+            /// cached Lightweight Code Requirement is reported here: read it from the process.
+            case process(target: ESProcess?, targetToken: audit_token_t, jobLabel: String)
+            
+            /// A lazy-launched owner. There is no live process, so the only available identity
+            /// is the Lightweight Code Requirement launchd had configured, if any.
+            case job(jobLabel: String, lwcr: ESLightweightCodeRequirement?)
+        }
+    }
+    
     struct BTMLaunchItemAdd: Equatable, Codable, Sendable {
         public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
+        
         public var app: ESProcess?
+        
+        /// Audit token of the app process that registered the item.
+        public var appToken: audit_token_t? /* field available only if message version >= 8 */
+        
         public var item: BTMLaunchItem
         public var executablePath: String
         
-        public init(instigator: ESProcess?, app: ESProcess?, item: BTMLaunchItem, executablePath: String) {
+        public init(instigator: ESProcess?, app: ESProcess?, item: BTMLaunchItem, executablePath: String, instigatorToken: audit_token_t? = nil, appToken: audit_token_t? = nil) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.app = app
+            self.appToken = appToken
             self.item = item
             self.executablePath = executablePath
         }
@@ -412,12 +519,22 @@ public extension ESEvent {
     
     struct BTMLaunchItemRemove: Equatable, Codable, Sendable {
         public var instigator: ESProcess?
+        
+        /// Audit token of the process that instigated this event.
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
+        
         public var app: ESProcess?
+        
+        /// Audit token of the app process that removed the item.
+        public var appToken: audit_token_t? /* field available only if message version >= 8 */
+        
         public var item: BTMLaunchItem
         
-        public init(instigator: ESProcess?, app: ESProcess?, item: BTMLaunchItem) {
+        public init(instigator: ESProcess?, app: ESProcess?, item: BTMLaunchItem, instigatorToken: audit_token_t? = nil, appToken: audit_token_t? = nil) {
             self.instigator = instigator
+            self.instigatorToken = instigatorToken
             self.app = app
+            self.appToken = appToken
             self.item = item
         }
     }
@@ -472,9 +589,17 @@ public extension ESEvent {
         public var modified: Bool
         public var target: ESFile
         
-        public init(modified: Bool, target: ESFile) {
+        /// Indicates that at some point in the lifetime of the target file vnode
+        /// it was mapped into a process as writable.
+        ///
+        /// - Note: It does not indicate whether the file has actually been written to
+        /// by way of writing to mapped memory, nor whether the file is currently still mapped writable.
+        public var wasMappedWritable: Bool? /* field available only if message version >= 6 */
+        
+        public init(modified: Bool, target: ESFile, wasMappedWritable: Bool? = nil) {
             self.modified = modified
             self.target = target
+            self.wasMappedWritable = wasMappedWritable
         }
     }
     
@@ -536,15 +661,24 @@ public extension ESEvent {
         public var script: ESFile? /* field available only if message version >= 2 */
         public var cwd: ESFile? /* field available only if message version >= 3 */
         public var lastFD: Int32? /* field available only if message version >= 4 */
+        public var imageCPUType: cpu_type_t? /* field available only if message version >= 6 */
+        public var imageCPUSubtype: cpu_subtype_t? /* field available only if message version >= 6 */
+        
+        /// The exec path passed to the dyld for execution.
+        /// Only set when the process is launched by dyld, empty otherwise.
+        public var dyldExecPath: String? /* field available only if message version >= 7 */
         
         public var args: [String]? // present if ESConverter.Config.execArgs == true
         public var env: [String]? // present if ESConverter.Config.execEnv == true
         
-        public init(target: ESProcess, script: ESFile?, cwd: ESFile?, lastFD: Int32?) {
+        public init(target: ESProcess, script: ESFile?, cwd: ESFile?, lastFD: Int32?, imageCPUType: cpu_type_t? = nil, imageCPUSubtype: cpu_subtype_t? = nil, dyldExecPath: String? = nil) {
             self.target = target
             self.script = script
             self.cwd = cwd
             self.lastFD = lastFD
+            self.imageCPUType = imageCPUType
+            self.imageCPUSubtype = imageCPUSubtype
+            self.dyldExecPath = dyldExecPath
         }
     }
     
@@ -558,11 +692,11 @@ public extension ESEvent {
     
     struct FileProviderMaterialize: Equatable, Codable, Sendable {
         public var instigator: ESProcess?
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         public var source: ESFile
         public var target: ESFile
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, source: ESFile, target: ESFile) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, source: ESFile, target: ESFile) {
             self.instigator = instigator
             self.source = source
             self.target = target
@@ -609,32 +743,48 @@ public extension ESEvent {
     struct GetTask: Equatable, Codable, Sendable {
         public var target: ESProcess
         
-        public init(target: ESProcess) {
+        /// Type indicating how the process is obtaining the task port for the target process.
+        public var type: es_get_task_type_t? /* field available only if message version >= 5 */
+        
+        public init(target: ESProcess, type: es_get_task_type_t? = nil) {
             self.target = target
+            self.type = type
         }
     }
     
     struct GetTaskRead: Equatable, Codable, Sendable {
         public var target: ESProcess
         
-        public init(target: ESProcess) {
+        /// Type indicating how the process is obtaining the task port for the target process.
+        public var type: es_get_task_type_t? /* field available only if message version >= 5 */
+        
+        public init(target: ESProcess, type: es_get_task_type_t? = nil) {
             self.target = target
+            self.type = type
         }
     }
     
     struct GetTaskInspect: Equatable, Codable, Sendable {
         public var target: ESProcess
         
-        public init(target: ESProcess) {
+        /// Type indicating how the process is obtaining the task port for the target process.
+        public var type: es_get_task_type_t? /* field available only if message version >= 5 */
+        
+        public init(target: ESProcess, type: es_get_task_type_t? = nil) {
             self.target = target
+            self.type = type
         }
     }
     
     struct GetTaskName: Equatable, Codable, Sendable {
         public var target: ESProcess
         
-        public init(target: ESProcess) {
+        /// Type indicating how the process is obtaining the task port for the target process.
+        public var type: es_get_task_type_t? /* field available only if message version >= 5 */
+        
+        public init(target: ESProcess, type: es_get_task_type_t? = nil) {
             self.target = target
+            self.type = type
         }
     }
     
@@ -662,9 +812,19 @@ public extension ESEvent {
         public var userClientType: UInt32
         public var userClientClass: String
         
-        public init(userClientType: UInt32, userClientClass: String) {
+        /// The registry entry ID of the parent of the class being opened.
+        /// It can be resolved to an `io_registry_entry_t` by using `IOServiceGetMatchingService`.
+        public var parentRegistryID: UInt64? /* field available only if message version >= 10 */
+        
+        /// The path in the IOKit device tree to the class being opened.
+        /// It can be resolved to an `io_registry_entry_t` by calling `IORegistryEntryFromPath`.
+        public var parentPath: String? /* field available only if message version >= 10 */
+        
+        public init(userClientType: UInt32, userClientClass: String, parentRegistryID: UInt64? = nil, parentPath: String? = nil) {
             self.userClientType = userClientType
             self.userClientClass = userClientClass
+            self.parentRegistryID = parentRegistryID
+            self.parentPath = parentPath
         }
     }
     
@@ -771,8 +931,12 @@ public extension ESEvent {
     struct Mount: Equatable, Codable, Sendable {
         public var statfs: statfs
         
-        public init(statfs: statfs) {
+        /// The device disposition of the `f_mntfromname`.
+        public var disposition: es_mount_disposition_t? /* field available only if message version >= 8 */
+        
+        public init(statfs: statfs, disposition: es_mount_disposition_t? = nil) {
             self.statfs = statfs
+            self.disposition = disposition
         }
     }
     
@@ -854,11 +1018,11 @@ public extension ESEvent {
     
     struct ProfileAdd: Equatable, Codable, Sendable {
         public var instigator: ESProcess?
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         public var isUpdate: Bool
         public var profile: ESProfile
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, isUpdate: Bool, profile: ESProfile) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, isUpdate: Bool, profile: ESProfile) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.isUpdate = isUpdate
@@ -868,10 +1032,10 @@ public extension ESEvent {
     
     struct ProfileRemove: Equatable, Codable, Sendable {
         public var instigator: ESProcess?
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         public var profile: ESProfile
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, profile: ESProfile) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, profile: ESProfile) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.profile = profile
@@ -923,8 +1087,16 @@ public extension ESEvent {
     struct Remount: Equatable, Codable, Sendable {
         public var statfs: statfs
         
-        public init(statfs: statfs) {
+        /// The provided remount flags.
+        public var remountFlags: UInt64? /* field available only if message version >= 8 */
+        
+        /// The device disposition of the `f_mntfromname`.
+        public var disposition: es_mount_disposition_t? /* field available only if message version >= 8 */
+        
+        public init(statfs: statfs, remountFlags: UInt64? = nil, disposition: es_mount_disposition_t? = nil) {
             self.statfs = statfs
+            self.remountFlags = remountFlags
+            self.disposition = disposition
         }
     }
     
@@ -1087,9 +1259,17 @@ public extension ESEvent {
         public var sig: Int32
         public var target: ESProcess
         
-        public init(sig: Int32, target: ESProcess) {
+        /// Process information for the instigator, if applicable.
+        ///
+        /// Signals may be delivered on behalf of another process, e.g. `launchd` delivering
+        /// a signal requested via `launchctl kill`. In that case the message process is the
+        /// sender and `instigator` is the process that asked for the signal to be sent.
+        public var instigator: ESProcess? /* field available only if message version >= 9 */
+        
+        public init(sig: Int32, target: ESProcess, instigator: ESProcess? = nil) {
             self.sig = sig
             self.target = target
+            self.instigator = instigator
         }
     }
     
@@ -1098,6 +1278,52 @@ public extension ESEvent {
         
         public init(target: ESFile) {
             self.target = target
+        }
+    }
+    
+    /// TCC Modification Event. Occurs when a TCC permission is granted or revoked.
+    struct TCCModify: Equatable, Codable, Sendable {
+        /// The TCC service for which permissions are being modified.
+        public var service: String
+        
+        /// The identity of the application that is the subject of the permission.
+        public var identity: String
+        
+        /// The identity type of the application string (Bundle ID, path, etc).
+        public var identityType: es_tcc_identity_type_t
+        
+        /// The type of TCC modification event (Grant/Revoke etc).
+        public var updateType: es_tcc_event_type_t
+        
+        /// Audit token of the instigator of the modification.
+        public var instigatorToken: audit_token_t
+        
+        /// The process information for the instigator.
+        public var instigator: ESProcess?
+        
+        /// Audit token of the responsible process for the modification.
+        public var responsibleToken: audit_token_t?
+        
+        /// The process information for the responsible process.
+        public var responsible: ESProcess?
+        
+        /// The resulting TCC permission of the operation/modification.
+        public var right: es_tcc_authorization_right_t
+        
+        /// The reason the TCC permissions were updated.
+        public var reason: es_tcc_authorization_reason_t
+        
+        public init(service: String, identity: String, identityType: es_tcc_identity_type_t, updateType: es_tcc_event_type_t, instigatorToken: audit_token_t, instigator: ESProcess?, responsibleToken: audit_token_t?, responsible: ESProcess?, right: es_tcc_authorization_right_t, reason: es_tcc_authorization_reason_t) {
+            self.service = service
+            self.identity = identity
+            self.identityType = identityType
+            self.updateType = updateType
+            self.instigatorToken = instigatorToken
+            self.instigator = instigator
+            self.responsibleToken = responsibleToken
+            self.responsible = responsible
+            self.right = right
+            self.reason = reason
         }
     }
     
@@ -1187,11 +1413,16 @@ public extension ESEvent {
         public var incidentIdentifier: String
         public var detectedPath: String
         
-        public init(signatureVersion: String, malwareIdentifier: String, incidentIdentifier: String, detectedPath: String) {
+        /// Path to malicious binary.
+        /// This can differ from `detectedPath` when the detected path is an app bundle.
+        public var detectedExecutable: String? /* field available only if message version >= 10 */
+        
+        public init(signatureVersion: String, malwareIdentifier: String, incidentIdentifier: String, detectedPath: String, detectedExecutable: String? = nil) {
             self.signatureVersion = signatureVersion
             self.malwareIdentifier = malwareIdentifier
             self.incidentIdentifier = incidentIdentifier
             self.detectedPath = detectedPath
+            self.detectedExecutable = detectedExecutable
         }
     }
     
@@ -1279,10 +1510,13 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// Process that created the petition.
         public var petitioner: ESProcess?
+        
+        /// Audit token of the process that created the petition.
+        public var petitionerToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// Flags associated with the petition. Defined Security framework "Authorization/Authorizatioh.h".
         public var flags: UInt32
@@ -1290,10 +1524,11 @@ public extension ESEvent {
         /// Array of string tokens, each token is the name of a right being requested.
         public var rights: [String]
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, petitioner: ESProcess? = nil, flags: UInt32, rights: [String]) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, petitioner: ESProcess? = nil, petitionerToken: audit_token_t? = nil, flags: UInt32, rights: [String]) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.petitioner = petitioner
+            self.petitionerToken = petitionerToken
             self.flags = flags
             self.rights = rights
         }
@@ -1305,10 +1540,13 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// Process that created the petition.
         public var petitioner: ESProcess?
+        
+        /// Audit token of the process that created the petition.
+        public var petitionerToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// The overall result of the petition. 0 indicates success.
         /// Possible return codes are defined Security framework "Authorization/Authorizatioh.h".
@@ -1317,10 +1555,11 @@ public extension ESEvent {
         /// Array of results. One for each right that was peititioned.
         public var results: [AuthorizationResult]
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, petitioner: ESProcess? = nil, returnCode: Int32, results: [AuthorizationResult]) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, petitioner: ESProcess? = nil, petitionerToken: audit_token_t? = nil, returnCode: Int32, results: [AuthorizationResult]) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.petitioner = petitioner
+            self.petitionerToken = petitionerToken
             self.returnCode = returnCode
             self.results = results
         }
@@ -1355,7 +1594,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1375,7 +1614,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, groupName: String, member: ESODMemberID, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, member: ESODMemberID, nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -1395,7 +1634,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1415,7 +1654,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, groupName: String, member: ESODMemberID, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, member: ESODMemberID, nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -1435,7 +1674,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1454,7 +1693,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, groupName: String, members: [ESODMemberID], nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, members: [ESODMemberID], nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -1471,7 +1710,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1491,7 +1730,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, accountType: es_od_account_type_t, accountName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, accountType: es_od_account_type_t, accountName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -1508,7 +1747,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1525,7 +1764,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -1541,7 +1780,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1558,7 +1797,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -1578,7 +1817,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1604,7 +1843,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValue: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValue: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -1629,7 +1868,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1655,7 +1894,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValue: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValue: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -1680,7 +1919,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1706,7 +1945,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValues: [String], nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValues: [String], nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -1725,7 +1964,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1742,7 +1981,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -1758,7 +1997,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1775,7 +2014,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, groupName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -1791,7 +2030,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1808,7 +2047,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -1824,7 +2063,7 @@ public extension ESEvent {
         public var instigator: ESProcess?
         
         /// Audit token of the process that instigated this event.
-        public var instigatorToken: audit_token_t
+        public var instigatorToken: audit_token_t? /* field available only if message version >= 8 */
         
         /// 0 indicates the operation succeeded.
         /// Values inidicating specific failure reasons are defined in odconstants.h.
@@ -1841,7 +2080,7 @@ public extension ESEvent {
         /// against which OD is authenticating.
         public var dbPath: String
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t, errorCode: Int32, groupName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, nodeName: String, dbPath: String) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode

@@ -76,8 +76,14 @@ public extension ESConverter {
         es.length > 0 ? String(cString: es.data) : ""
     }
     
+    /// Same as `esString`, but keeps apart a token that carries no data at all (`nil`)
+    /// from one that carries an empty value (`""`).
+    func esStringOptional(_ es: es_string_token_t) -> String? {
+        es.data != nil ? esString(es) : nil
+    }
+    
     func esToken(_ es: es_token_t) -> Data {
-        Data(bytes: es.data, count: es.size)
+        es.size > 0 ? Data(bytes: es.data, count: es.size) : Data()
     }
     
     func esFile(_ es: es_file_t) -> ESFile {
@@ -106,7 +112,9 @@ public extension ESConverter {
             tty: version >= 2 ? es.tty.flatMap(esFile) : nil, /* field available only if message version >= 2 */
             startTime: version >= 3 ? es.start_time : nil, /* field available only if message version >= 3 */
             responsibleAuditToken: version >= 4 ? es.responsible_audit_token : nil, /* field available only if message version >= 4 */
-            parentAuditToken: version >= 4 ? es.parent_audit_token : nil /* field available only if message version >= 4 */
+            parentAuditToken: version >= 4 ? es.parent_audit_token : nil, /* field available only if message version >= 4 */
+            csValidationCategory: version >= 10 ? es.cs_validation_category : nil, /* field available only if message version >= 10 */
+            cdHashFull: version >= 11 ? esToken(es.cdhash_full) : nil /* field available only if message version >= 11 */
         )
     }
     
@@ -126,7 +134,6 @@ public extension ESConverter {
         ESThreadState(flavor: es.flavor, state: esToken(es.state))
     }
     
-#if compiler(>=6.0)
     func esSignedFileInfo(_ es: es_signed_file_info_t) -> ESSignedFileInfo {
         .init(
             cdHash: withUnsafeBytes(of: es.cdhash) { Data($0) },
@@ -134,7 +141,6 @@ public extension ESConverter {
             signingID: esString(es.signing_id)
         )
     }
-#endif
     
     func esAuthResult(_ es: es_result_t) throws -> ESAuthResult {
         switch es.result_type {
@@ -513,9 +519,20 @@ public extension ESConverter {
             return .odDeleteGroup(esEvent(odDeleteGroup: event.od_delete_group.pointee))
         case ES_EVENT_TYPE_NOTIFY_XPC_CONNECT:
             return .xpcConnect(esEvent(xpcConnect: event.xpc_connect.pointee))
-#if compiler(>=6.0)
+            // macOS 15.0:
         case ES_EVENT_TYPE_NOTIFY_GATEKEEPER_USER_OVERRIDE:
             return try .gatekeeperUserOverride(esEvent(gatekeeperUserOverride: event.gatekeeper_user_override.pointee))
+            // macOS 15.4:
+        case ES_EVENT_TYPE_NOTIFY_TCC_MODIFY:
+            return .tccModify(esEvent(tccModify: event.tcc_modify.pointee))
+#if compiler(>=6.4)
+            // macOS 27.0:
+        case ES_EVENT_TYPE_AUTH_XPC_CONNECT:
+            return .xpcConnect(esEvent(xpcConnect: event.xpc_connect.pointee))
+        case ES_EVENT_TYPE_AUTH_BOOTSTRAP_CHECK_IN, ES_EVENT_TYPE_NOTIFY_BOOTSTRAP_CHECK_IN:
+            return .bootstrapCheckIn(esEvent(bootstrapCheckIn: event.bootstrap_check_in.pointee))
+        case ES_EVENT_TYPE_AUTH_BOOTSTRAP_LOOK_UP, ES_EVENT_TYPE_NOTIFY_BOOTSTRAP_LOOK_UP:
+            return try .bootstrapLookUp(esEvent(bootstrapLookUp: event.bootstrap_look_up.pointee))
 #endif
         default:
             throw CommonError.invalidArgument(arg: "es_event_type_t", invalidValue: type)
@@ -543,7 +560,11 @@ public extension ESConverter {
     }
     
     func esEvent(close es: es_event_close_t) -> ESEvent.Close {
-        .init(modified: es.modified, target: esFile(es.target))
+        .init(
+            modified: es.modified,
+            target: esFile(es.target),
+            wasMappedWritable: version >= 6 ? es.was_mapped_writable : nil /* field available only if message version >= 6 */
+        )
     }
     
     func esEvent(create es: es_event_create_t) throws -> ESEvent.Create {
@@ -586,7 +607,10 @@ public extension ESConverter {
             target: esProcess(es.target),
             script: version >= 2 ? es.script.flatMap(esFile) : nil, /* field available only if message version >= 2 */
             cwd: version >= 3 ? esFile(es.cwd.pointee) : nil, /* field available only if message version >= 3 */
-            lastFD: version >= 4 ? es.last_fd : nil /* field available only if message version >= 4 */
+            lastFD: version >= 4 ? es.last_fd : nil, /* field available only if message version >= 4 */
+            imageCPUType: version >= 6 ? es.image_cputype : nil, /* field available only if message version >= 6 */
+            imageCPUSubtype: version >= 6 ? es.image_cpusubtype : nil, /* field available only if message version >= 6 */
+            dyldExecPath: version >= 7 ? esString(es.dyld_exec_path) : nil /* field available only if message version >= 7 */
         )
         if config.execArgs {
             event.args = es.args
@@ -605,7 +629,7 @@ public extension ESConverter {
     func esEvent(file_provider_materialize es: es_event_file_provider_materialize_t) -> ESEvent.FileProviderMaterialize {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             source: esFile(es.source),
             target: esFile(es.target)
         )
@@ -628,19 +652,31 @@ public extension ESConverter {
     }
     
     func esEvent(get_task es: es_event_get_task_t) -> ESEvent.GetTask {
-        .init(target: esProcess(es.target))
+        .init(
+            target: esProcess(es.target),
+            type: version >= 5 ? es.type : nil /* field available only if message version >= 5 */
+        )
     }
     
     func esEvent(get_task_read es: es_event_get_task_read_t) -> ESEvent.GetTaskRead {
-        .init(target: esProcess(es.target))
+        .init(
+            target: esProcess(es.target),
+            type: version >= 5 ? es.type : nil /* field available only if message version >= 5 */
+        )
     }
     
     func esEvent(get_task_inspect es: es_event_get_task_inspect_t) -> ESEvent.GetTaskInspect {
-        .init(target: esProcess(es.target))
+        .init(
+            target: esProcess(es.target),
+            type: version >= 5 ? es.type : nil /* field available only if message version >= 5 */
+        )
     }
     
     func esEvent(get_task_name es: es_event_get_task_name_t) -> ESEvent.GetTaskName {
-        .init(target: esProcess(es.target))
+        .init(
+            target: esProcess(es.target),
+            type: version >= 5 ? es.type : nil /* field available only if message version >= 5 */
+        )
     }
     
     func esEvent(getattrlist es: es_event_getattrlist_t) -> ESEvent.GetAttrList {
@@ -652,7 +688,13 @@ public extension ESConverter {
     }
     
     func esEvent(iokit_open es: es_event_iokit_open_t) -> ESEvent.IOKitOpen {
-        .init(userClientType: es.user_client_type, userClientClass: esString(es.user_client_class))
+        /* parentRegistryID and parentPath are available only if message version >= 10 */
+        .init(
+            userClientType: es.user_client_type,
+            userClientClass: esString(es.user_client_class),
+            parentRegistryID: version >= 10 ? es.parent_registry_id : nil,
+            parentPath: version >= 10 ? esString(es.parent_path) : nil
+        )
     }
     
     func esEvent(kextload es: es_event_kextload_t) -> ESEvent.KextLoad {
@@ -680,7 +722,10 @@ public extension ESConverter {
     }
     
     func esEvent(mount es: es_event_mount_t) -> ESEvent.Mount {
-        .init(statfs: es.statfs.pointee)
+        .init(
+            statfs: es.statfs.pointee,
+            disposition: version >= 8 ? es.disposition : nil /* field available only if message version >= 8 */
+        )
     }
     
     func esEvent(mprotect es: es_event_mprotect_t) -> ESEvent.MProtect {
@@ -720,7 +765,12 @@ public extension ESConverter {
     }
     
     func esEvent(remount es: es_event_remount_t) -> ESEvent.Remount {
-        .init(statfs: es.statfs.pointee)
+        /* remountFlags and disposition are available only if message version >= 8 */
+        .init(
+            statfs: es.statfs.pointee,
+            remountFlags: version >= 8 ? es.remount_flags : nil,
+            disposition: version >= 8 ? es.disposition : nil
+        )
     }
     
     func esEvent(rename es: es_event_rename_t) throws -> ESEvent.Rename {
@@ -796,7 +846,11 @@ public extension ESConverter {
     }
     
     func esEvent(signal es: es_event_signal_t) -> ESEvent.Signal {
-        .init(sig: es.sig, target: esProcess(es.target))
+        .init(
+            sig: es.sig,
+            target: esProcess(es.target),
+            instigator: version >= 9 ? esInstigator(es.instigator) : nil /* field available only if message version >= 9 */
+        )
     }
     
     func esEvent(stat es: es_event_stat_t) -> ESEvent.Stat {
@@ -841,7 +895,7 @@ public extension ESConverter {
         case ES_AUTHENTICATION_TYPE_OD:
             type = .od(.init(
                 instigator: esInstigator(es.pointee.data.od.pointee.instigator),
-                instigatorToken: instigatorToken(es.pointee.data.od.pointee),
+                instigatorToken: version >= 8 ? es.pointee.data.od.pointee.instigator_token : nil, /* field available only if message version >= 8 */
                 recordType: esString(es.pointee.data.od.pointee.record_type),
                 recordName: esString(es.pointee.data.od.pointee.record_name),
                 nodeName: esString(es.pointee.data.od.pointee.node_name),
@@ -850,14 +904,14 @@ public extension ESConverter {
         case ES_AUTHENTICATION_TYPE_TOUCHID:
             type = .touchID(.init(
                 instigator: esInstigator(es.pointee.data.touchid.pointee.instigator),
-                instigatorToken: instigatorToken(es.pointee.data.touchid.pointee),
+                instigatorToken: version >= 8 ? es.pointee.data.touchid.pointee.instigator_token : nil, /* field available only if message version >= 8 */
                 touchIDMode: es.pointee.data.touchid.pointee.touchid_mode,
                 uid: es.pointee.data.touchid.pointee.has_uid ? es.pointee.data.touchid.pointee.uid.uid : nil
             ))
         case ES_AUTHENTICATION_TYPE_TOKEN:
             type = .token(.init(
                 instigator: esInstigator(es.pointee.data.token.pointee.instigator),
-                instigatorToken: instigatorToken(es.pointee.data.token.pointee),
+                instigatorToken: version >= 8 ? es.pointee.data.token.pointee.instigator_token : nil, /* field available only if message version >= 8 */
                 pubkeyHash: esString(es.pointee.data.token.pointee.pubkey_hash),
                 tokenID: esString(es.pointee.data.token.pointee.token_id),
                 kerberosPrincipal: esString(es.pointee.data.token.pointee.kerberos_principal)
@@ -878,7 +932,8 @@ public extension ESConverter {
             signatureVersion: esString(es.pointee.signature_version),
             malwareIdentifier: esString(es.pointee.malware_identifier),
             incidentIdentifier: esString(es.pointee.incident_identifier),
-            detectedPath: esString(es.pointee.detected_path)
+            detectedPath: esString(es.pointee.detected_path),
+            detectedExecutable: version >= 10 ? esString(es.pointee.detected_executable) : nil /* field available only if message version >= 10 */
         )
     }
     
@@ -980,26 +1035,32 @@ public extension ESConverter {
     }
     
     func esEvent(btmLaunchItemAdd es: UnsafePointer<es_event_btm_launch_item_add_t>) -> ESEvent.BTMLaunchItemAdd {
+        /* instigatorToken and appToken are available only if message version >= 8 */
         .init(
             instigator: es.pointee.instigator.flatMap(esProcess),
             app: es.pointee.app.flatMap(esProcess),
             item: esBTMLaunchItem(es.pointee.item),
-            executablePath: esString(es.pointee.executable_path)
+            executablePath: esString(es.pointee.executable_path),
+            instigatorToken: version >= 8 ? es.pointee.instigator_token?.pointee : nil,
+            appToken: version >= 8 ? es.pointee.app_token?.pointee : nil
         )
     }
     
     func esEvent(btmLaunchItemRemove es: UnsafePointer<es_event_btm_launch_item_remove_t>) -> ESEvent.BTMLaunchItemRemove {
+        /* instigatorToken and appToken are available only if message version >= 8 */
         .init(
             instigator: es.pointee.instigator.flatMap(esProcess),
-            app: es.pointee.instigator.flatMap(esProcess),
-            item: esBTMLaunchItem(es.pointee.item)
+            app: es.pointee.app.flatMap(esProcess),
+            item: esBTMLaunchItem(es.pointee.item),
+            instigatorToken: version >= 8 ? es.pointee.instigator_token?.pointee : nil,
+            appToken: version >= 8 ? es.pointee.app_token?.pointee : nil
         )
     }
     
     func esEvent(profileAdd es: es_event_profile_add_t) -> ESEvent.ProfileAdd {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             isUpdate: es.is_update,
             profile: esProfile(es.profile.pointee)
         )
@@ -1008,7 +1069,7 @@ public extension ESConverter {
     func esEvent(profileRemove es: es_event_profile_remove_t) -> ESEvent.ProfileRemove {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             profile: esProfile(es.profile.pointee)
         )
     }
@@ -1030,8 +1091,9 @@ public extension ESConverter {
     func esEvent(authorizationPetition es: es_event_authorization_petition_t) -> ESEvent.AuthorizationPetition {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             petitioner: es.petitioner.flatMap(esProcess),
+            petitionerToken: version >= 8 ? es.petitioner_token : nil, /* field available only if message version >= 8 */
             flags: es.flags,
             rights: UnsafeBufferPointer(start: es.rights, count: es.right_count).map(esString)
         )
@@ -1040,8 +1102,9 @@ public extension ESConverter {
     func esEvent(authorizationJudgement es: es_event_authorization_judgement_t) -> ESEvent.AuthorizationJudgement {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             petitioner: es.petitioner.flatMap(esProcess),
+            petitionerToken: version >= 8 ? es.petitioner_token : nil, /* field available only if message version >= 8 */
             returnCode: es.return_code,
             results: UnsafeBufferPointer(start: es.results, count: es.result_count).map {
                 .init(
@@ -1074,7 +1137,7 @@ public extension ESConverter {
     func esEvent(odGroupAdd es: es_event_od_group_add_t) throws -> ESEvent.ODGroupAdd {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             groupName: esString(es.group_name),
             member: try esODMemberID(es.member),
@@ -1086,7 +1149,7 @@ public extension ESConverter {
     func esEvent(odGroupRemove es: es_event_od_group_remove_t) throws -> ESEvent.ODGroupRemove {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             groupName: esString(es.group_name),
             member: try esODMemberID(es.member),
@@ -1098,7 +1161,7 @@ public extension ESConverter {
     func esEvent(odGroupSet es: es_event_od_group_set_t) throws -> ESEvent.ODGroupSet {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             groupName: esString(es.group_name),
             members: try esODMemberIDs(es.members),
@@ -1110,7 +1173,7 @@ public extension ESConverter {
     func esEvent(odModifyPassword es: es_event_od_modify_password_t) -> ESEvent.ODModifyPassword {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             accountType: es.account_type,
             accountName: esString(es.account_name),
@@ -1122,7 +1185,7 @@ public extension ESConverter {
     func esEvent(odDisableUser es: es_event_od_disable_user_t) -> ESEvent.ODDisableUser {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             userName: esString(es.user_name),
             nodeName: esString(es.node_name),
@@ -1133,7 +1196,7 @@ public extension ESConverter {
     func esEvent(odEnableUser es: es_event_od_enable_user_t) -> ESEvent.ODEnableUser {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             userName: esString(es.user_name),
             nodeName: esString(es.node_name),
@@ -1144,7 +1207,7 @@ public extension ESConverter {
     func esEvent(odAttributeValueAdd es: es_event_od_attribute_value_add_t) -> ESEvent.ODAttributeValueAdd {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             recordType: es.record_type,
             recordName: esString(es.record_name),
@@ -1158,7 +1221,7 @@ public extension ESConverter {
     func esEvent(odAttributeValueRemove es: es_event_od_attribute_value_remove_t) -> ESEvent.ODAttributeValueRemove {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             recordType: es.record_type,
             recordName: esString(es.record_name),
@@ -1172,7 +1235,7 @@ public extension ESConverter {
     func esEvent(odAttributeSet es: es_event_od_attribute_set_t) -> ESEvent.ODAttributeSet {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             recordType: es.record_type,
             recordName: esString(es.record_name),
@@ -1189,7 +1252,7 @@ public extension ESConverter {
     func esEvent(odCreateUser es: es_event_od_create_user_t) -> ESEvent.ODCreateUser {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             userName: esString(es.user_name),
             nodeName: esString(es.node_name),
@@ -1200,7 +1263,7 @@ public extension ESConverter {
     func esEvent(odCreateGroup es: es_event_od_create_group_t) -> ESEvent.ODCreateGroup {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             groupName: esString(es.group_name),
             nodeName: esString(es.node_name),
@@ -1211,7 +1274,7 @@ public extension ESConverter {
     func esEvent(odDeleteUser es: es_event_od_delete_user_t) -> ESEvent.ODDeleteUser {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             userName: esString(es.user_name),
             nodeName: esString(es.node_name),
@@ -1222,7 +1285,7 @@ public extension ESConverter {
     func esEvent(odDeleteGroup es: es_event_od_delete_group_t) -> ESEvent.ODDeleteGroup {
         .init(
             instigator: esInstigator(es.instigator),
-            instigatorToken: instigatorToken(es),
+            instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
             errorCode: es.error_code,
             groupName: esString(es.group_name),
             nodeName: esString(es.node_name),
@@ -1234,7 +1297,6 @@ public extension ESConverter {
         .init(serviceName: esString(es.service_name), serviceDomainType: es.service_domain_type)
     }
     
-#if compiler(>=6.0)
     func esEvent(gatekeeperUserOverride es: es_event_gatekeeper_user_override_t) throws -> ESEvent.GatekeeperUserOverride {
         let file: ESEvent.GatekeeperUserOverride.File = switch es.file_type {
         case ES_GATEKEEPER_USER_OVERRIDE_FILE_TYPE_FILE: .file(esFile(es.file.file))
@@ -1251,53 +1313,63 @@ public extension ESConverter {
             signing_info: es.signing_info.flatMap { esSignedFileInfo($0.pointee) }
         )
     }
-#endif
     
-    // MARK: - Temporary support for Xcode 15 - Xcode 16 transition.
+    /// All fields of this event were introduced together with the event itself
+    /// (macOS 15.4), so none of them carry a message-version gate of their own.
+    func esEvent(tccModify es: es_event_tcc_modify_t) -> ESEvent.TCCModify {
+        .init(
+            service: esString(es.service),
+            identity: esString(es.identity),
+            identityType: es.identity_type,
+            updateType: es.update_type,
+            instigatorToken: es.instigator_token,
+            instigator: esInstigator(es.instigator),
+            responsibleToken: es.responsible_token?.pointee,
+            responsible: esInstigator(es.responsible),
+            right: es.right,
+            reason: es.reason
+        )
+    }
+
+#if compiler(>=6.4)
+    func esEvent(bootstrapCheckIn es: es_event_bootstrap_check_in_t) -> ESEvent.BootstrapCheckIn {
+        .init(
+            instigator: esInstigator(es.instigator),
+            instigatorToken: es.instigator_token,
+            serviceName: esString(es.service_name)
+        )
+    }
     
-#if compiler(>=6.0)
-    private func instigatorToken(_ es: es_event_file_provider_materialize_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_authentication_od_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_authentication_touchid_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_authentication_token_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_profile_add_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_profile_remove_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_authorization_petition_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_authorization_judgement_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_group_add_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_group_remove_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_group_set_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_modify_password_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_disable_user_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_enable_user_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_attribute_value_add_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_attribute_value_remove_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_attribute_set_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_create_user_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_create_group_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_delete_user_t) -> audit_token_t { es.instigator_token }
-    private func instigatorToken(_ es: es_event_od_delete_group_t) -> audit_token_t { es.instigator_token }
-#else
-    private func instigatorToken(_ es: es_event_file_provider_materialize_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_authentication_od_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_authentication_touchid_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_authentication_token_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_profile_add_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_profile_remove_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_authorization_petition_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_authorization_judgement_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_group_add_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_group_remove_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_group_set_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_modify_password_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_disable_user_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_enable_user_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_attribute_value_add_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_attribute_value_remove_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_attribute_set_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_create_user_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_create_group_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_delete_user_t) -> audit_token_t { es.instigator.pointee.audit_token }
-    private func instigatorToken(_ es: es_event_od_delete_group_t) -> audit_token_t { es.instigator.pointee.audit_token }
+    func esEvent(bootstrapLookUp es: es_event_bootstrap_look_up_t) throws -> ESEvent.BootstrapLookUp {
+        let target: ESEvent.BootstrapLookUp.Target
+        switch es.target_type {
+        case ES_BOOTSTRAP_TARGET_TYPE_PROCESS:
+            target = .process(
+                target: esInstigator(es.target.process.target),
+                targetToken: es.target.process.target_token,
+                jobLabel: esString(es.target.process.job_label)
+            )
+        case ES_BOOTSTRAP_TARGET_TYPE_JOB:
+            target = .job(
+                jobLabel: esString(es.target.job.job_label),
+                lwcr: es.target.job.lwcr.map { esLightweightCodeRequirement($0.pointee) }
+            )
+        default:
+            throw CommonError.invalidArgument(
+                arg: "es_bootstrap_target_type_t",
+                invalidValue: es.target_type
+            )
+        }
+        return .init(
+            instigator: esInstigator(es.instigator),
+            instigatorToken: es.instigator_token,
+            serviceName: esString(es.service_name),
+            target: target
+        )
+    }
+    
+    func esLightweightCodeRequirement(_ es: es_lightweight_code_requirement_t) -> ESLightweightCodeRequirement {
+        .init(teamID: esStringOptional(es.team_id), signingID: esStringOptional(es.signing_id))
+    }
 #endif
 }

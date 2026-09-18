@@ -11,28 +11,33 @@ jobs:
     strategy:
       matrix:
         include:
-          - xcode: "26.0" # Swift 6.2
-            macOS: "26"
-          - xcode: "16.4" # Swift 6
-            macOS: "15"
+          # The xcode-27 image ships a single Xcode, so there is nothing to select.
+          - name: "Xcode 27 on macOS 27"
+            runner: "xcode-27"
+            xcode: ""
+          # The macos-26 image ships Xcode 26.0.1 ... 26.6; pick one with Swift 6.3,
+          # which swift-tools-version:6.3 in Package.swift requires (26.0 - 26.3 are Swift 6.2.x).
+          - name: "Xcode 26.6 on macOS 26"
+            runner: "macos-26"
+            xcode: "26.6"
       fail-fast: false
 
-    runs-on: macos-${{ matrix.macOS }}
-    name: Build with Xcode ${{ matrix.xcode }} on macOS ${{ matrix.macOS }}
+    runs-on: ${{ matrix.runner }}
+    name: Build with ${{ matrix.name }}
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Xcode Select Version
+        if: matrix.xcode != ''
         uses: mobiledevops/xcode-select-version-action@v1
         with:
           xcode-select-version: ${{ matrix.xcode }}
-      - run: xcodebuild -version 
+      - run: xcodebuild -version && swift --version
 
-      - name: Test macOS with Xcode ${{ matrix.xcode }}
+      - name: Test macOS with ${{ matrix.name }}
         run: |
-          set -e 
+          set -e
           set -o pipefail
-          
+
           xcodebuild test -scheme SwiftSpellbook_macOS-Package -destination "platform=macOS" SWIFT_ACTIVE_COMPILATION_CONDITIONS="SPELLBOOK_SLOW_CI_x20" | xcpretty
-          

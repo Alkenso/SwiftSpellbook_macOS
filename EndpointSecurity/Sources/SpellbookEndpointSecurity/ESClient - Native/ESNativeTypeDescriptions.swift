@@ -331,9 +331,40 @@ extension es_event_type_t: ESNativeType {
             return "ES_EVENT_TYPE_NOTIFY_OD_DELETE_GROUP"
         case ES_EVENT_TYPE_NOTIFY_XPC_CONNECT:
             return "ES_EVENT_TYPE_NOTIFY_XPC_CONNECT"
-#if compiler(>=6.0)
         case ES_EVENT_TYPE_NOTIFY_GATEKEEPER_USER_OVERRIDE:
             return "ES_EVENT_TYPE_NOTIFY_GATEKEEPER_USER_OVERRIDE"
+        case ES_EVENT_TYPE_NOTIFY_TCC_MODIFY:
+            return "ES_EVENT_TYPE_NOTIFY_TCC_MODIFY"
+        case ES_EVENT_TYPE_RESERVED_0:
+            return "ES_EVENT_TYPE_RESERVED_0"
+        case ES_EVENT_TYPE_RESERVED_1:
+            return "ES_EVENT_TYPE_RESERVED_1"
+        case ES_EVENT_TYPE_RESERVED_2:
+            return "ES_EVENT_TYPE_RESERVED_2"
+        case ES_EVENT_TYPE_RESERVED_3:
+            return "ES_EVENT_TYPE_RESERVED_3"
+        case ES_EVENT_TYPE_RESERVED_4:
+            return "ES_EVENT_TYPE_RESERVED_4"
+        case ES_EVENT_TYPE_RESERVED_5:
+            return "ES_EVENT_TYPE_RESERVED_5"
+        case ES_EVENT_TYPE_RESERVED_6:
+            return "ES_EVENT_TYPE_RESERVED_6"
+        case ES_EVENT_TYPE_RESERVED_7:
+            return "ES_EVENT_TYPE_RESERVED_7"
+        case ES_EVENT_TYPE_RESERVED_8:
+            return "ES_EVENT_TYPE_RESERVED_8"
+#if compiler(>=6.4)
+        /* Event types of macOS 27.0 are declared by the macOS 27 SDK and newer. */
+        case ES_EVENT_TYPE_AUTH_XPC_CONNECT:
+            return "ES_EVENT_TYPE_AUTH_XPC_CONNECT"
+        case ES_EVENT_TYPE_AUTH_BOOTSTRAP_CHECK_IN:
+            return "ES_EVENT_TYPE_AUTH_BOOTSTRAP_CHECK_IN"
+        case ES_EVENT_TYPE_NOTIFY_BOOTSTRAP_CHECK_IN:
+            return "ES_EVENT_TYPE_NOTIFY_BOOTSTRAP_CHECK_IN"
+        case ES_EVENT_TYPE_AUTH_BOOTSTRAP_LOOK_UP:
+            return "ES_EVENT_TYPE_AUTH_BOOTSTRAP_LOOK_UP"
+        case ES_EVENT_TYPE_NOTIFY_BOOTSTRAP_LOOK_UP:
+            return "ES_EVENT_TYPE_NOTIFY_BOOTSTRAP_LOOK_UP"
 #endif
         default:
             return nil
@@ -833,6 +864,188 @@ extension es_xpc_domain_type_t: ESNativeType {
             return "ES_XPC_DOMAIN_TYPE_PORT"
         case ES_XPC_DOMAIN_TYPE_GUI:
             return "ES_XPC_DOMAIN_TYPE_GUI"
+        default:
+            return nil
+        }
+    }
+}
+
+extension es_get_task_type_t: @retroactive Decodable {}
+extension es_get_task_type_t: @retroactive Encodable {}
+extension es_get_task_type_t: @retroactive CustomStringConvertible {}
+extension es_get_task_type_t: ESNativeType {
+    fileprivate var name: String? {
+        switch self {
+        case ES_GET_TASK_TYPE_TASK_FOR_PID:
+            return "ES_GET_TASK_TYPE_TASK_FOR_PID"
+        case ES_GET_TASK_TYPE_EXPOSE_TASK:
+            return "ES_GET_TASK_TYPE_EXPOSE_TASK"
+        case ES_GET_TASK_TYPE_IDENTITY_TOKEN:
+            return "ES_GET_TASK_TYPE_IDENTITY_TOKEN"
+        default:
+            return nil
+        }
+    }
+}
+
+extension es_mount_disposition_t: @retroactive Decodable {}
+extension es_mount_disposition_t: @retroactive Encodable {}
+extension es_mount_disposition_t: @retroactive CustomStringConvertible {}
+extension es_mount_disposition_t: ESNativeType {
+    fileprivate var name: String? {
+        switch self {
+        case ES_MOUNT_DISPOSITION_EXTERNAL:
+            return "ES_MOUNT_DISPOSITION_EXTERNAL"
+        case ES_MOUNT_DISPOSITION_INTERNAL:
+            return "ES_MOUNT_DISPOSITION_INTERNAL"
+        case ES_MOUNT_DISPOSITION_NETWORK:
+            return "ES_MOUNT_DISPOSITION_NETWORK"
+        case ES_MOUNT_DISPOSITION_VIRTUAL:
+            return "ES_MOUNT_DISPOSITION_VIRTUAL"
+        case ES_MOUNT_DISPOSITION_NULLFS:
+            return "ES_MOUNT_DISPOSITION_NULLFS"
+        case ES_MOUNT_DISPOSITION_UNKNOWN:
+            return "ES_MOUNT_DISPOSITION_UNKNOWN"
+        default:
+            return nil
+        }
+    }
+}
+
+extension es_cs_validation_category_t: @retroactive Decodable {}
+extension es_cs_validation_category_t: @retroactive Encodable {}
+extension es_cs_validation_category_t: @retroactive CustomStringConvertible {}
+extension es_cs_validation_category_t: ESNativeType {
+    fileprivate var name: String? {
+        switch self {
+        case ES_CS_VALIDATION_CATEGORY_INVALID:
+            return "ES_CS_VALIDATION_CATEGORY_INVALID"
+        case ES_CS_VALIDATION_CATEGORY_PLATFORM:
+            return "ES_CS_VALIDATION_CATEGORY_PLATFORM"
+        case ES_CS_VALIDATION_CATEGORY_TESTFLIGHT:
+            return "ES_CS_VALIDATION_CATEGORY_TESTFLIGHT"
+        case ES_CS_VALIDATION_CATEGORY_DEVELOPMENT:
+            return "ES_CS_VALIDATION_CATEGORY_DEVELOPMENT"
+        case ES_CS_VALIDATION_CATEGORY_APP_STORE:
+            return "ES_CS_VALIDATION_CATEGORY_APP_STORE"
+        case ES_CS_VALIDATION_CATEGORY_ENTERPRISE:
+            return "ES_CS_VALIDATION_CATEGORY_ENTERPRISE"
+        case ES_CS_VALIDATION_CATEGORY_DEVELOPER_ID:
+            return "ES_CS_VALIDATION_CATEGORY_DEVELOPER_ID"
+        case ES_CS_VALIDATION_CATEGORY_LOCAL_SIGNING:
+            return "ES_CS_VALIDATION_CATEGORY_LOCAL_SIGNING"
+        case ES_CS_VALIDATION_CATEGORY_ROSETTA:
+            return "ES_CS_VALIDATION_CATEGORY_ROSETTA"
+        case ES_CS_VALIDATION_CATEGORY_OOPJIT:
+            return "ES_CS_VALIDATION_CATEGORY_OOPJIT"
+        case ES_CS_VALIDATION_CATEGORY_NONE:
+            return "ES_CS_VALIDATION_CATEGORY_NONE"
+        default:
+            return nil
+        }
+    }
+}
+
+extension es_tcc_event_type_t: @retroactive Decodable {}
+extension es_tcc_event_type_t: @retroactive Encodable {}
+extension es_tcc_event_type_t: @retroactive CustomStringConvertible {}
+extension es_tcc_event_type_t: ESNativeType {
+    fileprivate var name: String? {
+        switch self {
+        case ES_TCC_EVENT_TYPE_UNKNOWN:
+            return "ES_TCC_EVENT_TYPE_UNKNOWN"
+        case ES_TCC_EVENT_TYPE_CREATE:
+            return "ES_TCC_EVENT_TYPE_CREATE"
+        case ES_TCC_EVENT_TYPE_MODIFY:
+            return "ES_TCC_EVENT_TYPE_MODIFY"
+        case ES_TCC_EVENT_TYPE_DELETE:
+            return "ES_TCC_EVENT_TYPE_DELETE"
+        default:
+            return nil
+        }
+    }
+}
+
+extension es_tcc_identity_type_t: @retroactive Decodable {}
+extension es_tcc_identity_type_t: @retroactive Encodable {}
+extension es_tcc_identity_type_t: @retroactive CustomStringConvertible {}
+extension es_tcc_identity_type_t: ESNativeType {
+    fileprivate var name: String? {
+        switch self {
+        case ES_TCC_IDENTITY_TYPE_BUNDLE_ID:
+            return "ES_TCC_IDENTITY_TYPE_BUNDLE_ID"
+        case ES_TCC_IDENTITY_TYPE_EXECUTABLE_PATH:
+            return "ES_TCC_IDENTITY_TYPE_EXECUTABLE_PATH"
+        case ES_TCC_IDENTITY_TYPE_POLICY_ID:
+            return "ES_TCC_IDENTITY_TYPE_POLICY_ID"
+        case ES_TCC_IDENTITY_TYPE_FILE_PROVIDER_DOMAIN_ID:
+            return "ES_TCC_IDENTITY_TYPE_FILE_PROVIDER_DOMAIN_ID"
+        default:
+            return nil
+        }
+    }
+}
+
+extension es_tcc_authorization_right_t: @retroactive Decodable {}
+extension es_tcc_authorization_right_t: @retroactive Encodable {}
+extension es_tcc_authorization_right_t: @retroactive CustomStringConvertible {}
+extension es_tcc_authorization_right_t: ESNativeType {
+    fileprivate var name: String? {
+        switch self {
+        case ES_TCC_AUTHORIZATION_RIGHT_DENIED:
+            return "ES_TCC_AUTHORIZATION_RIGHT_DENIED"
+        case ES_TCC_AUTHORIZATION_RIGHT_UNKNOWN:
+            return "ES_TCC_AUTHORIZATION_RIGHT_UNKNOWN"
+        case ES_TCC_AUTHORIZATION_RIGHT_ALLOWED:
+            return "ES_TCC_AUTHORIZATION_RIGHT_ALLOWED"
+        case ES_TCC_AUTHORIZATION_RIGHT_LIMITED:
+            return "ES_TCC_AUTHORIZATION_RIGHT_LIMITED"
+        case ES_TCC_AUTHORIZATION_RIGHT_ADD_MODIFY_ADDED:
+            return "ES_TCC_AUTHORIZATION_RIGHT_ADD_MODIFY_ADDED"
+        case ES_TCC_AUTHORIZATION_RIGHT_SESSION_PID:
+            return "ES_TCC_AUTHORIZATION_RIGHT_SESSION_PID"
+        case ES_TCC_AUTHORIZATION_RIGHT_LEARN_MORE:
+            return "ES_TCC_AUTHORIZATION_RIGHT_LEARN_MORE"
+        default:
+            return nil
+        }
+    }
+}
+
+extension es_tcc_authorization_reason_t: @retroactive Decodable {}
+extension es_tcc_authorization_reason_t: @retroactive Encodable {}
+extension es_tcc_authorization_reason_t: @retroactive CustomStringConvertible {}
+extension es_tcc_authorization_reason_t: ESNativeType {
+    fileprivate var name: String? {
+        switch self {
+        case ES_TCC_AUTHORIZATION_REASON_NONE:
+            return "ES_TCC_AUTHORIZATION_REASON_NONE"
+        case ES_TCC_AUTHORIZATION_REASON_ERROR:
+            return "ES_TCC_AUTHORIZATION_REASON_ERROR"
+        case ES_TCC_AUTHORIZATION_REASON_USER_CONSENT:
+            return "ES_TCC_AUTHORIZATION_REASON_USER_CONSENT"
+        case ES_TCC_AUTHORIZATION_REASON_USER_SET:
+            return "ES_TCC_AUTHORIZATION_REASON_USER_SET"
+        case ES_TCC_AUTHORIZATION_REASON_SYSTEM_SET:
+            return "ES_TCC_AUTHORIZATION_REASON_SYSTEM_SET"
+        case ES_TCC_AUTHORIZATION_REASON_SERVICE_POLICY:
+            return "ES_TCC_AUTHORIZATION_REASON_SERVICE_POLICY"
+        case ES_TCC_AUTHORIZATION_REASON_MDM_POLICY:
+            return "ES_TCC_AUTHORIZATION_REASON_MDM_POLICY"
+        case ES_TCC_AUTHORIZATION_REASON_SERVICE_OVERRIDE_POLICY:
+            return "ES_TCC_AUTHORIZATION_REASON_SERVICE_OVERRIDE_POLICY"
+        case ES_TCC_AUTHORIZATION_REASON_MISSING_USAGE_STRING:
+            return "ES_TCC_AUTHORIZATION_REASON_MISSING_USAGE_STRING"
+        case ES_TCC_AUTHORIZATION_REASON_PROMPT_TIMEOUT:
+            return "ES_TCC_AUTHORIZATION_REASON_PROMPT_TIMEOUT"
+        case ES_TCC_AUTHORIZATION_REASON_PREFLIGHT_UNKNOWN:
+            return "ES_TCC_AUTHORIZATION_REASON_PREFLIGHT_UNKNOWN"
+        case ES_TCC_AUTHORIZATION_REASON_ENTITLED:
+            return "ES_TCC_AUTHORIZATION_REASON_ENTITLED"
+        case ES_TCC_AUTHORIZATION_REASON_APP_TYPE_POLICY:
+            return "ES_TCC_AUTHORIZATION_REASON_APP_TYPE_POLICY"
+        case ES_TCC_AUTHORIZATION_REASON_PROMPT_CANCEL:
+            return "ES_TCC_AUTHORIZATION_REASON_PROMPT_CANCEL"
         default:
             return nil
         }

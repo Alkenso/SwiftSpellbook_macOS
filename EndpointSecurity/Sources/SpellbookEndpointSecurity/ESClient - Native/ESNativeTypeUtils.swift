@@ -52,9 +52,7 @@ extension es_event_exec_t {
 }
 
 internal func validESEvents(_ client: ESNativeClient) -> Set<es_event_type_t> {
-    guard #available(macOS 12.0, *) else { return fallbackESEvents }
-    
-    return validESEventsCacheLock.withLock {
+    validESEventsCacheLock.withLock {
         if let validESEventsCache { return validESEventsCache }
         
         let dummyPath = "/dummy_\(UUID())"
@@ -79,17 +77,21 @@ private nonisolated(unsafe) var validESEventsCache: Set<es_event_type_t>?
 private let validESEventsCacheLock = UnfairLock()
 
 private let fallbackESEvents: Set<es_event_type_t> = {
-    let lastEvent: UInt32
-    if #available(macOS 14.0, *) {
-        lastEvent = ES_EVENT_TYPE_LAST.rawValue
-    } else if #available(macOS 13.0, *) {
-        lastEvent = ES_EVENT_TYPE_NOTIFY_BTM_LAUNCH_ITEM_REMOVE.rawValue
-    } else if #available(macOS 12.0, *) {
-        lastEvent = ES_EVENT_TYPE_NOTIFY_COPYFILE.rawValue
-    } else if #available(macOS 11.3, *) {
-        lastEvent = ES_EVENT_TYPE_NOTIFY_GET_TASK_INSPECT.rawValue + 1
-    } else {
-        lastEvent = ES_EVENT_TYPE_NOTIFY_REMOUNT.rawValue + 1
-    }
-    return Set((0..<lastEvent).map(es_event_type_t.init(rawValue:)))
+    Set((0..<fallbackLastESEvent).map(es_event_type_t.init(rawValue:)))
 }()
+
+/// Exclusive upper bound of `es_event_type_t` raw values the running OS is expected to support.
+///
+/// `es_event_type_t` is append-only, so the last event introduced by an OS version
+/// (plus one) is the number of events that version knows about.
+private var fallbackLastESEvent: UInt32 {
+    if #available(macOS 27.0, *) { return ES_EVENT_TYPE_LAST.rawValue }
+    if #available(macOS 26.5, *) { return ES_EVENT_TYPE_RESERVED_8.rawValue + 1 }
+    if #available(macOS 26.4, *) { return ES_EVENT_TYPE_RESERVED_6.rawValue + 1 }
+    if #available(macOS 26.3, *) { return ES_EVENT_TYPE_RESERVED_2.rawValue + 1 }
+    if #available(macOS 15.4, *) { return ES_EVENT_TYPE_NOTIFY_TCC_MODIFY.rawValue + 1 }
+    if #available(macOS 15.0, *) { return ES_EVENT_TYPE_NOTIFY_GATEKEEPER_USER_OVERRIDE.rawValue + 1 }
+    if #available(macOS 14.0, *) { return ES_EVENT_TYPE_NOTIFY_XPC_CONNECT.rawValue + 1 }
+    if #available(macOS 13.0, *) { return ES_EVENT_TYPE_NOTIFY_BTM_LAUNCH_ITEM_REMOVE.rawValue + 1 }
+    return ES_EVENT_TYPE_NOTIFY_COPYFILE.rawValue + 1
+}

@@ -51,6 +51,29 @@ class ESClientTypesTests: XCTestCase {
         )
     }
     
+    func test_ESEventSet_all_coversWholeRange() {
+        let all = ESEventSet.all.events
+        XCTAssertEqual(all.count, Int(ES_EVENT_TYPE_LAST.rawValue))
+        XCTAssertTrue(all.contains(ES_EVENT_TYPE_AUTH_EXEC))
+        XCTAssertTrue(all.contains(es_event_type_t(rawValue: ES_EVENT_TYPE_LAST.rawValue - 1)))
+        XCTAssertFalse(all.contains(ES_EVENT_TYPE_LAST))
+        
+        XCTAssertEqual(ESEventSet.all.inverted(), .empty)
+        XCTAssertEqual(ESEventSet.empty.inverted(), .all)
+    }
+    
+    /// Guards against SDK updates that add event types the library does not know about yet.
+    ///
+    /// Every `es_event_type_t` declared by the SDK being compiled against must be named,
+    /// reserved slots included. A failure here means a newer SDK introduced event types
+    /// that still have to be adopted.
+    func test_ESEventType_allHaveNames() {
+        let unnamed = (0..<ES_EVENT_TYPE_LAST.rawValue)
+            .map(es_event_type_t.init(rawValue:))
+            .filter { $0.description.hasPrefix("unknown") }
+        XCTAssertEqual(unnamed.map(\.rawValue), [], "es_event_type_t values missing a name")
+    }
+    
     func test_ESInterest() {
         XCTAssertEqual(ESInterest.listen(), ESInterest(events: ESEventSet.all.events))
         XCTAssertEqual(ESInterest.listen([ES_EVENT_TYPE_NOTIFY_OPEN]), ESInterest(events: [ES_EVENT_TYPE_NOTIFY_OPEN]))

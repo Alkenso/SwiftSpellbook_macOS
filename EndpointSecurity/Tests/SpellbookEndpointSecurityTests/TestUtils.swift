@@ -57,35 +57,27 @@ func createMessage(path: String, signingID: String, teamID: String, event: es_ev
     message.pointee.global_seq_num = nextMessageID
     nextMessageID += 1
     
+    // Fields are assigned one by one rather than via the memberwise initializer:
+    // `es_process_t` gains fields with every message version, so its initializer
+    // signature differs between SDKs.
     message.pointee.process = .allocate(capacity: 1)
-#if compiler(>=6.2)
-    message.pointee.process.pointee = .init(
-        audit_token: .random(), ppid: 10, original_ppid: 10, group_id: 20, session_id: 500,
-        codesigning_flags: 0x800, is_platform_binary: false, is_es_client: false,
-        cdhash: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-        signing_id: .init(string: signingID),
-        team_id: .init(string: teamID),
-        executable: .allocate(capacity: 1),
-        tty: nil,
-        start_time: .init(tv_sec: 100, tv_usec: 500),
-        responsible_audit_token: .random(),
-        parent_audit_token: .random(),
-        cs_validation_category: ES_CS_VALIDATION_CATEGORY_NONE
-    )
-#else
-    message.pointee.process.pointee = .init(
-        audit_token: .random(), ppid: 10, original_ppid: 10, group_id: 20, session_id: 500,
-        codesigning_flags: 0x800, is_platform_binary: false, is_es_client: false,
-        cdhash: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-        signing_id: .init(string: signingID),
-        team_id: .init(string: teamID),
-        executable: .allocate(capacity: 1),
-        tty: nil,
-        start_time: .init(tv_sec: 100, tv_usec: 500),
-        responsible_audit_token: .random(),
-        parent_audit_token: .random()
-    )
-#endif
+    UnsafeMutableRawPointer(message.pointee.process)
+        .initializeMemory(as: UInt8.self, repeating: 0, count: MemoryLayout<es_process_t>.size)
+    message.pointee.process.pointee.audit_token = .random()
+    message.pointee.process.pointee.ppid = 10
+    message.pointee.process.pointee.original_ppid = 10
+    message.pointee.process.pointee.group_id = 20
+    message.pointee.process.pointee.session_id = 500
+    message.pointee.process.pointee.codesigning_flags = 0x800
+    message.pointee.process.pointee.is_platform_binary = false
+    message.pointee.process.pointee.is_es_client = false
+    message.pointee.process.pointee.signing_id = .init(string: signingID)
+    message.pointee.process.pointee.team_id = .init(string: teamID)
+    message.pointee.process.pointee.executable = .allocate(capacity: 1)
+    message.pointee.process.pointee.tty = nil
+    message.pointee.process.pointee.start_time = .init(tv_sec: 100, tv_usec: 500)
+    message.pointee.process.pointee.responsible_audit_token = .random()
+    message.pointee.process.pointee.parent_audit_token = .random()
     message.pointee.process.pointee.executable.pointee.path = .init(string: path)
     
     message.pointee.action_type = isAuth ? ES_ACTION_TYPE_AUTH : ES_ACTION_TYPE_NOTIFY
