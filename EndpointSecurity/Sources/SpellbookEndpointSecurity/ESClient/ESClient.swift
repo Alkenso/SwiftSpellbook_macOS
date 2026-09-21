@@ -27,27 +27,39 @@ import SpellbookFoundation
 
 private let log = SpellbookLogger.internalLog(.client)
 
-public final class ESClient: ESClientProtocol, @unchecked Sendable {
-    /// Initialise a new ESClient and connect to the ES subsystem. No-throw version
-    /// Subscribe to some set of events
+public class ESClient: ESClientProtocol, @unchecked Sendable {
+    internal class var esNew: (
+        name: String,
+        create: (
+            UnsafeMutablePointer<OpaquePointer?>,
+            @escaping es_handler_block_t
+        ) -> es_new_client_result_t
+    ) {
+        ("es_new_client", es_new_client)
+    }
+    
+    /// Initialize new ESClient and connect to the ES subsystem. No-throw version
     /// - Parameters:
+    ///     - name: Custom name to identify the instance
     ///     - status: Out parameter indicating status on initialization result
     public convenience init?(_ name: String? = nil, status: inout es_new_client_result_t) {
         do {
             try self.init(name)
             status = ES_NEW_CLIENT_RESULT_SUCCESS
         } catch {
-            status = (error as? ESError<es_new_client_result_t>)?.result ?? ES_NEW_CLIENT_RESULT_ERR_INTERNAL
+            status = error.result
             return nil
         }
     }
     
     /// Initialise a new ESClient and connect to the ES subsystem
+    /// - Parameters:
+    ///     - name: Custom name to identify the instance
     /// - throws: ESClientCreateError in case of error
-    public convenience init(_ name: String? = nil) throws {
+    public convenience init(_ name: String? = nil) throws(ESError<es_new_client_result_t>) {
         var client: OpaquePointer?
         weak var weakSelf: ESClient?
-        let status = es_new_client(&client) { innerClient, rawMessage in
+        let status = Self.esNew.create(&client) { innerClient, rawMessage in
             if let self = weakSelf {
                 let message = ESMessagePtr(message: rawMessage)
                 self.handleMessage(message)
@@ -60,10 +72,14 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
         weakSelf = self
     }
     
-    private init(name: String?, client: ESNativeClient?, status: es_new_client_result_t) throws {
-        let name = name ?? "ESClient"
+    private init(
+        name: String?,
+        client: ESNativeClient?,
+        status: es_new_client_result_t
+    ) throws(ESError<es_new_client_result_t>) {
+        let name = name ?? "\(Self.self)"
         guard let client, status == ES_NEW_CLIENT_RESULT_SUCCESS else {
-            throw ESError("es_new_client", result: status, client: name)
+            throw ESError(Self.esNew.name, result: status, client: name)
         }
         
         _ = validESEvents(client)
@@ -174,7 +190,7 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
             client.esClearCache()
         }
     }
-
+    
     // MARK: Interest
     
     /// Perform process filtering, additionally to muting of path and processes.
@@ -319,14 +335,14 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
         }
         return mode
     }
-
+    
     @available(macOS 27.0, *)
     public func setDeadlineMissMode(_ mode: es_deadline_miss_mode_t) throws {
         try tryAction("setDeadlineMissMode", success: ES_RETURN_SUCCESS) {
             client.esSetDeadlineMissMode(mode)
         }
     }
-
+    
     @available(macOS 27.0, *)
     public func getDeadlineMaxMilliseconds(_ event: es_event_type_t) throws -> UInt32 {
         guard let milliseconds = client.esGetDeadlineMaxMilliseconds(event) else {
@@ -334,7 +350,7 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
         }
         return milliseconds
     }
-
+    
     @available(macOS 27.0, *)
     public func setDeadlineMaxMilliseconds(_ events: [es_event_type_t], milliseconds: UInt32) throws {
         try tryAction("setDeadlineMaxMilliseconds", success: ES_RETURN_SUCCESS) {
@@ -344,8 +360,7 @@ public final class ESClient: ESClientProtocol, @unchecked Sendable {
 #endif
     
     // MARK: Private
-
-    private var client: ESNativeClient
+    private let client: ESNativeClient
     private let pathMutes: ESMutePath
     private let processMutes: ESMuteProcess
     private let timebaseInfo: mach_timebase_info?
