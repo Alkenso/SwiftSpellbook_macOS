@@ -34,11 +34,11 @@ class XPCClientTests: XCTestCase {
     }
     
     func test_typical() throws {
-        var subscriptions: [SubscriptionToken] = []
+        var subscriptions: [Cancellation] = []
         
         let expStateChange = expectation(description: "Connection state changed when connected")
-        client.connectedState.subscribe { state in
-            if let state {
+        client.connectedState.observe { state in
+            if let state = state?.new {
                 XCTAssertEqual(state, Self.testVersion)
                 expStateChange.fulfill()
             }
@@ -57,11 +57,11 @@ class XPCClientTests: XCTestCase {
     }
     
     func test_reconnect() throws {
-        var subscriptions: [SubscriptionToken] = []
+        var subscriptions: [Cancellation] = []
         
         @Atomic var expStateChange = expectation(description: "Connection state changed when connected")
-        client.connectedState.subscribe { [$expStateChange] state in
-            if let state {
+        client.connectedState.observe { [$expStateChange] state in
+            if let state = state?.new {
                 XCTAssertEqual(state, Self.testVersion)
                 $expStateChange.wrappedValue.fulfill()
             }

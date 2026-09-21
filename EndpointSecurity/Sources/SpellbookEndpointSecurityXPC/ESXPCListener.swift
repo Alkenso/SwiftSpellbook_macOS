@@ -32,7 +32,7 @@ private let log = SpellbookLogger.internalLog(.xpc)
 public final class ESXPCListener: NSObject {
     private let createClient: () throws -> ESClient
     private let listener: NSXPCListener
-    private let sendCustomMessage = EventNotify<(data: Data, peer: UUID, reply: @Sendable (Result<Data, Error>) -> Void)>()
+    private let sendCustomMessage = ValueBroadcast<(data: Data, peer: UUID, reply: @Sendable (Result<Data, Error>) -> Void)>()
     
     /// When receiving incoming conneciton, ESXPCListener creates one ESClient for each connection.
     /// `pathInterestHandler`, `authMessageHandler`, `notifyMessageHandler` are overriden by XPC engine.
@@ -40,6 +40,8 @@ public final class ESXPCListener: NSObject {
     public init(listener: NSXPCListener, createClient: @escaping () throws -> ESClient) {
         self.listener = listener
         self.createClient = createClient
+        
+        sendCustomMessage.notifyQueue = nil
         
         super.init()
         
@@ -94,10 +96,10 @@ extension ESXPCListener: NSXPCListenerDelegate {
             self?.receiveCustomMessageHandler?($0, clientID, $1)
         }
         
-        exportedClient.parentSubscription = sendCustomMessage.subscribe { [weak exportedClient] in
+        exportedClient.parentSubscription = sendCustomMessage.observe(.sync { [weak exportedClient] in
             guard let exportedClient, exportedClient.id == $0.peer else { return }
             exportedClient.receiveCustomMessage($0.data, reply: $0.reply)
-        }
+        })
         
         return exportedClient
     }
