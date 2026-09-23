@@ -51,8 +51,8 @@ extension ESConverter.Config {
     public static let full = Self(execArgs: true, execEnv: true)
 }
 
-public extension ESConverter {
-    static func esMessage(_ es: es_message_t, config: Config) throws -> ESMessage {
+extension ESConverter {
+    public static func esMessage(_ es: es_message_t, config: Config) throws -> ESMessage {
         let version = es.version
         let converter = ESConverter(version: version, config: config)
         return try ESMessage(
@@ -71,31 +71,31 @@ public extension ESConverter {
     }
 }
 
-public extension ESConverter {
-    func esString(_ es: es_string_token_t) -> String {
+extension ESConverter {
+    public func esString(_ es: es_string_token_t) -> String {
         es.length > 0 ? String(cString: es.data) : ""
     }
     
     /// Same as `esString`, but keeps apart a token that carries no data at all (`nil`)
     /// from one that carries an empty value (`""`).
-    func esStringOptional(_ es: es_string_token_t) -> String? {
+    public func esStringOptional(_ es: es_string_token_t) -> String? {
         es.data != nil ? esString(es) : nil
     }
     
-    func esToken(_ es: es_token_t) -> Data {
+    public func esToken(_ es: es_token_t) -> Data {
         es.size > 0 ? Data(bytes: es.data, count: es.size) : Data()
     }
     
-    func esFile(_ es: es_file_t) -> ESFile {
+    public func esFile(_ es: es_file_t) -> ESFile {
         let path = esString(es.path)
         return ESFile(path: path, truncated: es.path_truncated, stat: es.stat)
     }
     
-    func esFile(_ es: UnsafeMutablePointer<es_file_t>) -> ESFile {
+    public func esFile(_ es: UnsafeMutablePointer<es_file_t>) -> ESFile {
         esFile(es.pointee)
     }
     
-    func esProcess(_ es: es_process_t) -> ESProcess {
+    public func esProcess(_ es: es_process_t) -> ESProcess {
 #if compiler(>=6.4)
         let cdHashFull = version >= 11 ? esToken(es.cdhash_full) : nil /* field available only if message version >= 11 */
 #else
@@ -123,23 +123,23 @@ public extension ESConverter {
         )
     }
     
-    func esProcess(_ es: UnsafeMutablePointer<es_process_t>) -> ESProcess {
+    public func esProcess(_ es: UnsafeMutablePointer<es_process_t>) -> ESProcess {
         esProcess(es.pointee)
     }
     
-    func esInstigator(_ es: UnsafeMutablePointer<es_process_t>?) -> ESProcess? {
+    public func esInstigator(_ es: UnsafeMutablePointer<es_process_t>?) -> ESProcess? {
         es.flatMap(esProcess)
     }
     
-    func esThread(_ es: es_thread_t) -> ESThread {
+    public func esThread(_ es: es_thread_t) -> ESThread {
         ESThread(threadID: es.thread_id)
     }
     
-    func esThreadState(_ es: es_thread_state_t) -> ESThreadState {
+    public func esThreadState(_ es: es_thread_state_t) -> ESThreadState {
         ESThreadState(flavor: es.flavor, state: esToken(es.state))
     }
     
-    func esSignedFileInfo(_ es: es_signed_file_info_t) -> ESSignedFileInfo {
+    public func esSignedFileInfo(_ es: es_signed_file_info_t) -> ESSignedFileInfo {
         .init(
             cdHash: withUnsafeBytes(of: es.cdhash) { Data($0) },
             teamID: esString(es.team_id),
@@ -147,7 +147,7 @@ public extension ESConverter {
         )
     }
     
-    func esAuthResult(_ es: es_result_t) throws -> ESAuthResult {
+    public func esAuthResult(_ es: es_result_t) throws -> ESAuthResult {
         switch es.result_type {
         case ES_RESULT_TYPE_AUTH:
             switch es.result.auth {
@@ -165,7 +165,7 @@ public extension ESConverter {
         }
     }
     
-    func esAction(_ type: es_action_type_t, _ action: es_message_t.__Unnamed_union_action) throws -> ESMessage.Action {
+    public func esAction(_ type: es_action_type_t, _ action: es_message_t.__Unnamed_union_action) throws -> ESMessage.Action {
         switch type {
         case ES_ACTION_TYPE_AUTH:
             return .auth
@@ -176,7 +176,7 @@ public extension ESConverter {
         }
     }
     
-    func esBTMLaunchItem(_ es: UnsafePointer<es_btm_launch_item_t>) -> BTMLaunchItem {
+    public func esBTMLaunchItem(_ es: UnsafePointer<es_btm_launch_item_t>) -> BTMLaunchItem {
         .init(
             itemType: es.pointee.item_type,
             legacy: es.pointee.legacy,
@@ -187,7 +187,7 @@ public extension ESConverter {
         )
     }
     
-    func esProfile(_ es: es_profile_t) -> ESProfile {
+    public func esProfile(_ es: es_profile_t) -> ESProfile {
         .init(
             identifier: esString(es.identifier),
             uuid: esString(es.uuid),
@@ -198,7 +198,7 @@ public extension ESConverter {
         )
     }
     
-    func esODMemberID(_ es: UnsafePointer<es_od_member_id_t>) throws -> ESODMemberID {
+    public func esODMemberID(_ es: UnsafePointer<es_od_member_id_t>) throws -> ESODMemberID {
         switch es.pointee.member_type {
         case ES_OD_MEMBER_TYPE_USER_NAME:
             return .userName(esString(es.pointee.member_value.name))
@@ -211,7 +211,7 @@ public extension ESConverter {
         }
     }
     
-    func esODMemberIDs(_ es: UnsafePointer<es_od_member_id_array_t>) throws -> [ESODMemberID] {
+    public func esODMemberIDs(_ es: UnsafePointer<es_od_member_id_array_t>) throws -> [ESODMemberID] {
         switch es.pointee.member_type {
         case ES_OD_MEMBER_TYPE_USER_NAME:
             return UnsafeBufferPointer(start: es.pointee.member_array.names, count: es.pointee.member_count).map {
@@ -230,7 +230,7 @@ public extension ESConverter {
         }
     }
     
-    func esEvent(_ type: es_event_type_t, _ event: es_events_t) throws -> ESEvent {
+    public func esEvent(_ type: es_event_type_t, _ event: es_events_t) throws -> ESEvent {
         switch type {
         case ES_EVENT_TYPE_AUTH_EXEC:
             return .exec(esEvent(exec: event.exec))
@@ -544,27 +544,27 @@ public extension ESConverter {
         }
     }
     
-    func esEvent(access es: es_event_access_t) -> ESEvent.Access {
+    public func esEvent(access es: es_event_access_t) -> ESEvent.Access {
         .init(mode: es.mode, target: esFile(es.target))
     }
     
-    func esEvent(chdir es: es_event_chdir_t) -> ESEvent.Chdir {
+    public func esEvent(chdir es: es_event_chdir_t) -> ESEvent.Chdir {
         .init(target: esFile(es.target))
     }
     
-    func esEvent(chroot es: es_event_chroot_t) -> ESEvent.Chroot {
+    public func esEvent(chroot es: es_event_chroot_t) -> ESEvent.Chroot {
         .init(target: esFile(es.target))
     }
     
-    func esEvent(clone es: es_event_clone_t) -> ESEvent.Clone {
+    public func esEvent(clone es: es_event_clone_t) -> ESEvent.Clone {
         .init(source: esFile(es.source), targetDir: esFile(es.target_dir), targetName: esString(es.target_name))
     }
     
-    func esEvent(copyfile es: es_event_copyfile_t) -> ESEvent.CopyFile {
+    public func esEvent(copyfile es: es_event_copyfile_t) -> ESEvent.CopyFile {
         .init(source: esFile(es.source), targetFile: es.target_file.flatMap(esFile), targetDir: esFile(es.target_dir), targetName: esString(es.target_name), mode: es.mode, flags: es.flags)
     }
     
-    func esEvent(close es: es_event_close_t) -> ESEvent.Close {
+    public func esEvent(close es: es_event_close_t) -> ESEvent.Close {
         .init(
             modified: es.modified,
             target: esFile(es.target),
@@ -572,7 +572,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(create es: es_event_create_t) throws -> ESEvent.Create {
+    public func esEvent(create es: es_event_create_t) throws -> ESEvent.Create {
         let destination: ESEvent.Create.Destination
         switch es.destination_type {
         case ES_DESTINATION_TYPE_NEW_PATH:
@@ -595,19 +595,19 @@ public extension ESConverter {
         return .init(destination: destination, acl: acl)
     }
     
-    func esEvent(deleteextattr es: es_event_deleteextattr_t) -> ESEvent.DeleteExtAttr {
+    public func esEvent(deleteextattr es: es_event_deleteextattr_t) -> ESEvent.DeleteExtAttr {
         ESEvent.DeleteExtAttr(target: esFile(es.target), extattr: esString(es.extattr))
     }
     
-    func esEvent(dup es: es_event_dup_t) -> ESEvent.Dup {
+    public func esEvent(dup es: es_event_dup_t) -> ESEvent.Dup {
         ESEvent.Dup(target: esFile(es.target))
     }
     
-    func esEvent(exchangedata es: es_event_exchangedata_t) -> ESEvent.ExchangeData {
+    public func esEvent(exchangedata es: es_event_exchangedata_t) -> ESEvent.ExchangeData {
         ESEvent.ExchangeData(file1: esFile(es.file1), file2: esFile(es.file2))
     }
     
-    func esEvent(exec es: es_event_exec_t) -> ESEvent.Exec {
+    public func esEvent(exec es: es_event_exec_t) -> ESEvent.Exec {
         var event = ESEvent.Exec(
             target: esProcess(es.target),
             script: version >= 2 ? es.script.flatMap(esFile) : nil, /* field available only if message version >= 2 */
@@ -627,11 +627,11 @@ public extension ESConverter {
         return event
     }
     
-    func esEvent(exit es: es_event_exit_t) -> ESEvent.Exit {
+    public func esEvent(exit es: es_event_exit_t) -> ESEvent.Exit {
         .init(status: es.stat)
     }
     
-    func esEvent(file_provider_materialize es: es_event_file_provider_materialize_t) -> ESEvent.FileProviderMaterialize {
+    public func esEvent(file_provider_materialize es: es_event_file_provider_materialize_t) -> ESEvent.FileProviderMaterialize {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -640,59 +640,59 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(file_provider_update es: es_event_file_provider_update_t) -> ESEvent.FileProviderUpdate {
+    public func esEvent(file_provider_update es: es_event_file_provider_update_t) -> ESEvent.FileProviderUpdate {
         .init(source: esFile(es.source), targetPath: esString(es.target_path))
     }
     
-    func esEvent(fcntl es: es_event_fcntl_t) -> ESEvent.Fcntl {
+    public func esEvent(fcntl es: es_event_fcntl_t) -> ESEvent.Fcntl {
         .init(target: esFile(es.target), cmd: es.cmd)
     }
     
-    func esEvent(fork es: es_event_fork_t) -> ESEvent.Fork {
+    public func esEvent(fork es: es_event_fork_t) -> ESEvent.Fork {
         .init(child: esProcess(es.child))
     }
     
-    func esEvent(fsgetpath es: es_event_fsgetpath_t) -> ESEvent.FsGetPath {
+    public func esEvent(fsgetpath es: es_event_fsgetpath_t) -> ESEvent.FsGetPath {
         .init(target: esFile(es.target))
     }
     
-    func esEvent(get_task es: es_event_get_task_t) -> ESEvent.GetTask {
+    public func esEvent(get_task es: es_event_get_task_t) -> ESEvent.GetTask {
         .init(
             target: esProcess(es.target),
             type: version >= 5 ? es.type : nil /* field available only if message version >= 5 */
         )
     }
     
-    func esEvent(get_task_read es: es_event_get_task_read_t) -> ESEvent.GetTaskRead {
+    public func esEvent(get_task_read es: es_event_get_task_read_t) -> ESEvent.GetTaskRead {
         .init(
             target: esProcess(es.target),
             type: version >= 5 ? es.type : nil /* field available only if message version >= 5 */
         )
     }
     
-    func esEvent(get_task_inspect es: es_event_get_task_inspect_t) -> ESEvent.GetTaskInspect {
+    public func esEvent(get_task_inspect es: es_event_get_task_inspect_t) -> ESEvent.GetTaskInspect {
         .init(
             target: esProcess(es.target),
             type: version >= 5 ? es.type : nil /* field available only if message version >= 5 */
         )
     }
     
-    func esEvent(get_task_name es: es_event_get_task_name_t) -> ESEvent.GetTaskName {
+    public func esEvent(get_task_name es: es_event_get_task_name_t) -> ESEvent.GetTaskName {
         .init(
             target: esProcess(es.target),
             type: version >= 5 ? es.type : nil /* field available only if message version >= 5 */
         )
     }
     
-    func esEvent(getattrlist es: es_event_getattrlist_t) -> ESEvent.GetAttrList {
+    public func esEvent(getattrlist es: es_event_getattrlist_t) -> ESEvent.GetAttrList {
         .init(attrlist: es.attrlist, target: esFile(es.target))
     }
     
-    func esEvent(getextattr es: es_event_getextattr_t) -> ESEvent.GetExtAttr {
+    public func esEvent(getextattr es: es_event_getextattr_t) -> ESEvent.GetExtAttr {
         .init(target: esFile(es.target), extattr: esString(es.extattr))
     }
     
-    func esEvent(iokit_open es: es_event_iokit_open_t) -> ESEvent.IOKitOpen {
+    public func esEvent(iokit_open es: es_event_iokit_open_t) -> ESEvent.IOKitOpen {
         /* parentRegistryID and parentPath are available only if message version >= 10 */
         .init(
             userClientType: es.user_client_type,
@@ -702,74 +702,74 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(kextload es: es_event_kextload_t) -> ESEvent.KextLoad {
+    public func esEvent(kextload es: es_event_kextload_t) -> ESEvent.KextLoad {
         .init(identifier: esString(es.identifier))
     }
     
-    func esEvent(kextunload es: es_event_kextunload_t) -> ESEvent.KextUnload {
+    public func esEvent(kextunload es: es_event_kextunload_t) -> ESEvent.KextUnload {
         .init(identifier: esString(es.identifier))
     }
     
-    func esEvent(link es: es_event_link_t) -> ESEvent.Link {
+    public func esEvent(link es: es_event_link_t) -> ESEvent.Link {
         .init(source: esFile(es.source), targetDir: esFile(es.target_dir), targetFilename: esString(es.target_filename))
     }
     
-    func esEvent(listextattr es: es_event_listextattr_t) -> ESEvent.ListExtAttr {
+    public func esEvent(listextattr es: es_event_listextattr_t) -> ESEvent.ListExtAttr {
         .init(target: esFile(es.target))
     }
     
-    func esEvent(lookup es: es_event_lookup_t) -> ESEvent.Lookup {
+    public func esEvent(lookup es: es_event_lookup_t) -> ESEvent.Lookup {
         .init(sourceDir: esFile(es.source_dir), relativeTarget: esString(es.relative_target))
     }
     
-    func esEvent(mmap es: es_event_mmap_t) -> ESEvent.MMap {
+    public func esEvent(mmap es: es_event_mmap_t) -> ESEvent.MMap {
         .init(protection: es.protection, maxProtection: es.max_protection, flags: es.flags, filePos: es.file_pos, source: esFile(es.source))
     }
     
-    func esEvent(mount es: es_event_mount_t) -> ESEvent.Mount {
+    public func esEvent(mount es: es_event_mount_t) -> ESEvent.Mount {
         .init(
             statfs: es.statfs.pointee,
             disposition: version >= 8 ? es.disposition : nil /* field available only if message version >= 8 */
         )
     }
     
-    func esEvent(mprotect es: es_event_mprotect_t) -> ESEvent.MProtect {
+    public func esEvent(mprotect es: es_event_mprotect_t) -> ESEvent.MProtect {
         .init(protection: es.protection, address: es.address, size: es.size)
     }
     
-    func esEvent(open es: es_event_open_t) -> ESEvent.Open {
+    public func esEvent(open es: es_event_open_t) -> ESEvent.Open {
         .init(fflag: es.fflag, file: esFile(es.file))
     }
     
-    func esEvent(proc_check es: es_event_proc_check_t) -> ESEvent.ProcCheck {
+    public func esEvent(proc_check es: es_event_proc_check_t) -> ESEvent.ProcCheck {
         .init(target: es.target.flatMap(esProcess), type: es.type, flavor: es.flavor)
     }
     
-    func esEvent(proc_suspend_resume es: es_event_proc_suspend_resume_t) -> ESEvent.ProcSuspendResume {
+    public func esEvent(proc_suspend_resume es: es_event_proc_suspend_resume_t) -> ESEvent.ProcSuspendResume {
         .init(target: es.target.flatMap(esProcess), type: es.type)
     }
     
-    func esEvent(pty_close es: es_event_pty_close_t) -> ESEvent.PtyClose {
+    public func esEvent(pty_close es: es_event_pty_close_t) -> ESEvent.PtyClose {
         .init(dev: es.dev)
     }
     
-    func esEvent(pty_grant es: es_event_pty_grant_t) -> ESEvent.PtyGrant {
+    public func esEvent(pty_grant es: es_event_pty_grant_t) -> ESEvent.PtyGrant {
         .init(dev: es.dev)
     }
     
-    func esEvent(readdir es: es_event_readdir_t) -> ESEvent.Readdir {
+    public func esEvent(readdir es: es_event_readdir_t) -> ESEvent.Readdir {
         .init(target: esFile(es.target))
     }
     
-    func esEvent(readlink es: es_event_readlink_t) -> ESEvent.Readlink {
+    public func esEvent(readlink es: es_event_readlink_t) -> ESEvent.Readlink {
         .init(source: esFile(es.source))
     }
     
-    func esEvent(remote_thread_create es: es_event_remote_thread_create_t) -> ESEvent.RemoteThreadCreate {
+    public func esEvent(remote_thread_create es: es_event_remote_thread_create_t) -> ESEvent.RemoteThreadCreate {
         .init(target: esProcess(es.target), threadState: es.thread_state.map(\.pointee).flatMap(esThreadState))
     }
     
-    func esEvent(remount es: es_event_remount_t) -> ESEvent.Remount {
+    public func esEvent(remount es: es_event_remount_t) -> ESEvent.Remount {
         /* remountFlags and disposition are available only if message version >= 8 */
         .init(
             statfs: es.statfs.pointee,
@@ -778,7 +778,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(rename es: es_event_rename_t) throws -> ESEvent.Rename {
+    public func esEvent(rename es: es_event_rename_t) throws -> ESEvent.Rename {
         let destination: ESEvent.Rename.Destination
         switch es.destination_type {
         case ES_DESTINATION_TYPE_NEW_PATH:
@@ -794,11 +794,11 @@ public extension ESConverter {
         return .init(source: esFile(es.source), destination: destination)
     }
     
-    func esEvent(searchfs es: es_event_searchfs_t) -> ESEvent.SearchFS {
+    public func esEvent(searchfs es: es_event_searchfs_t) -> ESEvent.SearchFS {
         .init(attrlist: es.attrlist, target: esFile(es.target))
     }
     
-    func esEvent(setacl es: es_event_setacl_t) -> ESEvent.SetACL {
+    public func esEvent(setacl es: es_event_setacl_t) -> ESEvent.SetACL {
         var acl: acl_t?
         if es.set_or_clear == ES_SET {
             acl = es.acl.set
@@ -806,51 +806,51 @@ public extension ESConverter {
         return .init(target: esFile(es.target), setOrClear: es.set_or_clear, acl: acl)
     }
     
-    func esEvent(setattrlist es: es_event_setattrlist_t) -> ESEvent.SetAttrList {
+    public func esEvent(setattrlist es: es_event_setattrlist_t) -> ESEvent.SetAttrList {
         .init(attrlist: es.attrlist, target: esFile(es.target))
     }
     
-    func esEvent(setextattr es: es_event_setextattr_t) -> ESEvent.SetExtAttr {
+    public func esEvent(setextattr es: es_event_setextattr_t) -> ESEvent.SetExtAttr {
         .init(target: esFile(es.target), extattr: esString(es.extattr))
     }
     
-    func esEvent(setflags es: es_event_setflags_t) -> ESEvent.SetFlags {
+    public func esEvent(setflags es: es_event_setflags_t) -> ESEvent.SetFlags {
         .init(flags: es.flags, target: esFile(es.target))
     }
     
-    func esEvent(setmode es: es_event_setmode_t) -> ESEvent.SetMode {
+    public func esEvent(setmode es: es_event_setmode_t) -> ESEvent.SetMode {
         .init(mode: es.mode, target: esFile(es.target))
     }
     
-    func esEvent(setowner es: es_event_setowner_t) -> ESEvent.SetOwner {
+    public func esEvent(setowner es: es_event_setowner_t) -> ESEvent.SetOwner {
         .init(uid: es.uid, gid: es.gid, target: esFile(es.target))
     }
     
-    func esEvent(setuid es: es_event_setuid_t) -> ESEvent.SetUID {
+    public func esEvent(setuid es: es_event_setuid_t) -> ESEvent.SetUID {
         .init(uid: es.uid)
     }
     
-    func esEvent(setgid es: es_event_setgid_t) -> ESEvent.SetUID {
+    public func esEvent(setgid es: es_event_setgid_t) -> ESEvent.SetUID {
         .init(uid: es.gid)
     }
     
-    func esEvent(seteuid es: es_event_seteuid_t) -> ESEvent.SetUID {
+    public func esEvent(seteuid es: es_event_seteuid_t) -> ESEvent.SetUID {
         .init(uid: es.euid)
     }
     
-    func esEvent(setegid es: es_event_setegid_t) -> ESEvent.SetUID {
+    public func esEvent(setegid es: es_event_setegid_t) -> ESEvent.SetUID {
         .init(uid: es.egid)
     }
     
-    func esEvent(setreuid es: es_event_setreuid_t) -> ESEvent.SetREUID {
+    public func esEvent(setreuid es: es_event_setreuid_t) -> ESEvent.SetREUID {
         .init(ruid: es.ruid, euid: es.euid)
     }
     
-    func esEvent(setregid es: es_event_setregid_t) -> ESEvent.SetREUID {
+    public func esEvent(setregid es: es_event_setregid_t) -> ESEvent.SetREUID {
         .init(ruid: es.rgid, euid: es.egid)
     }
     
-    func esEvent(signal es: es_event_signal_t) -> ESEvent.Signal {
+    public func esEvent(signal es: es_event_signal_t) -> ESEvent.Signal {
         .init(
             sig: es.sig,
             target: esProcess(es.target),
@@ -858,43 +858,43 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(stat es: es_event_stat_t) -> ESEvent.Stat {
+    public func esEvent(stat es: es_event_stat_t) -> ESEvent.Stat {
         .init(target: esFile(es.target))
     }
     
-    func esEvent(trace es: es_event_trace_t) -> ESEvent.Trace {
+    public func esEvent(trace es: es_event_trace_t) -> ESEvent.Trace {
         .init(target: esProcess(es.target))
     }
     
-    func esEvent(truncate es: es_event_truncate_t) -> ESEvent.Truncate {
+    public func esEvent(truncate es: es_event_truncate_t) -> ESEvent.Truncate {
         .init(target: esFile(es.target))
     }
     
-    func esEvent(uipc_bind es: es_event_uipc_bind_t) -> ESEvent.UipcBind {
+    public func esEvent(uipc_bind es: es_event_uipc_bind_t) -> ESEvent.UipcBind {
         .init(dir: esFile(es.dir), filename: esString(es.filename), mode: es.mode)
     }
     
-    func esEvent(uipc_connect es: es_event_uipc_connect_t) -> ESEvent.UipcConnect {
+    public func esEvent(uipc_connect es: es_event_uipc_connect_t) -> ESEvent.UipcConnect {
         .init(file: esFile(es.file), domain: es.domain, type: es.type, protocol: es.protocol)
     }
     
-    func esEvent(unlink es: es_event_unlink_t) -> ESEvent.Unlink {
+    public func esEvent(unlink es: es_event_unlink_t) -> ESEvent.Unlink {
         .init(target: esFile(es.target), parentDir: esFile(es.parent_dir))
     }
     
-    func esEvent(unmount es: es_event_unmount_t) -> ESEvent.Unmount {
+    public func esEvent(unmount es: es_event_unmount_t) -> ESEvent.Unmount {
         .init(statfs: es.statfs.pointee)
     }
     
-    func esEvent(utimes es: es_event_utimes_t) -> ESEvent.Utimes {
+    public func esEvent(utimes es: es_event_utimes_t) -> ESEvent.Utimes {
         .init(target: esFile(es.target), aTime: es.atime, mTime: es.mtime)
     }
     
-    func esEvent(write es: es_event_write_t) -> ESEvent.Write {
+    public func esEvent(write es: es_event_write_t) -> ESEvent.Write {
         .init(target: esFile(es.target))
     }
     
-    func esEvent(authentication es: UnsafePointer<es_event_authentication_t>) throws -> ESEvent.Authentication {
+    public func esEvent(authentication es: UnsafePointer<es_event_authentication_t>) throws -> ESEvent.Authentication {
         let type: ESEvent.AuthenticationType
         switch es.pointee.type {
         case ES_AUTHENTICATION_TYPE_OD:
@@ -932,7 +932,7 @@ public extension ESConverter {
         return .init(success: es.pointee.success, type: type)
     }
     
-    func esEvent(xpMalwareDetected es: UnsafePointer<es_event_xp_malware_detected_t>) -> ESEvent.XPMalwareDetected {
+    public func esEvent(xpMalwareDetected es: UnsafePointer<es_event_xp_malware_detected_t>) -> ESEvent.XPMalwareDetected {
         .init(
             signatureVersion: esString(es.pointee.signature_version),
             malwareIdentifier: esString(es.pointee.malware_identifier),
@@ -942,7 +942,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(xpMalwareRemediated es: UnsafePointer<es_event_xp_malware_remediated_t>) -> ESEvent.XPMalwareRemediated {
+    public func esEvent(xpMalwareRemediated es: UnsafePointer<es_event_xp_malware_remediated_t>) -> ESEvent.XPMalwareRemediated {
         .init(
             signatureVersion: esString(es.pointee.signature_version),
             malwareIdentifier: esString(es.pointee.malware_identifier),
@@ -955,35 +955,35 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(lwSessionLogin es: UnsafePointer<es_event_lw_session_login_t>) -> ESEvent.LWSessionLogin {
+    public func esEvent(lwSessionLogin es: UnsafePointer<es_event_lw_session_login_t>) -> ESEvent.LWSessionLogin {
         .init(
             username: esString(es.pointee.username),
             graphicalSessionID: es.pointee.graphical_session_id
         )
     }
     
-    func esEvent(lwSessionLogout es: UnsafePointer<es_event_lw_session_logout_t>) -> ESEvent.LWSessionLogout {
+    public func esEvent(lwSessionLogout es: UnsafePointer<es_event_lw_session_logout_t>) -> ESEvent.LWSessionLogout {
         .init(
             username: esString(es.pointee.username),
             graphicalSessionID: es.pointee.graphical_session_id
         )
     }
     
-    func esEvent(lwSessionLock es: UnsafePointer<es_event_lw_session_lock_t>) -> ESEvent.LWSessionLock {
+    public func esEvent(lwSessionLock es: UnsafePointer<es_event_lw_session_lock_t>) -> ESEvent.LWSessionLock {
         .init(
             username: esString(es.pointee.username),
             graphicalSessionID: es.pointee.graphical_session_id
         )
     }
     
-    func esEvent(lwSessionUnlock es: UnsafePointer<es_event_lw_session_unlock_t>) -> ESEvent.LWSessionUnlock {
+    public func esEvent(lwSessionUnlock es: UnsafePointer<es_event_lw_session_unlock_t>) -> ESEvent.LWSessionUnlock {
         .init(
             username: esString(es.pointee.username),
             graphicalSessionID: es.pointee.graphical_session_id
         )
     }
     
-    func esEvent(screensharingAttach es: UnsafePointer<es_event_screensharing_attach_t>) -> ESEvent.ScreensharingAttach {
+    public func esEvent(screensharingAttach es: UnsafePointer<es_event_screensharing_attach_t>) -> ESEvent.ScreensharingAttach {
         .init(
             success: es.pointee.success,
             sourceAddressType: es.pointee.source_address_type,
@@ -997,7 +997,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(screensharingDetach es: UnsafePointer<es_event_screensharing_detach_t>) -> ESEvent.ScreensharingDetach {
+    public func esEvent(screensharingDetach es: UnsafePointer<es_event_screensharing_detach_t>) -> ESEvent.ScreensharingDetach {
         .init(
             sourceAddressType: es.pointee.source_address_type,
             sourceAddress: esStringOptional(es.pointee.source_address),
@@ -1006,7 +1006,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(opensshLogin es: UnsafePointer<es_event_openssh_login_t>) -> ESEvent.OpensshLogin {
+    public func esEvent(opensshLogin es: UnsafePointer<es_event_openssh_login_t>) -> ESEvent.OpensshLogin {
         .init(
             success: es.pointee.success,
             resultType: es.pointee.result_type,
@@ -1017,7 +1017,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(opensshLogout es: UnsafePointer<es_event_openssh_logout_t>) -> ESEvent.OpensshLogout {
+    public func esEvent(opensshLogout es: UnsafePointer<es_event_openssh_logout_t>) -> ESEvent.OpensshLogout {
         .init(
             sourceAddressType: es.pointee.source_address_type,
             sourceAddress: esString(es.pointee.source_address),
@@ -1026,7 +1026,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(loginLogin es: UnsafePointer<es_event_login_login_t>) -> ESEvent.LoginLogin {
+    public func esEvent(loginLogin es: UnsafePointer<es_event_login_login_t>) -> ESEvent.LoginLogin {
         .init(
             success: es.pointee.success,
             failureMessage: esStringOptional(es.pointee.failure_message),
@@ -1035,11 +1035,11 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(loginLogout es: UnsafePointer<es_event_login_logout_t>) -> ESEvent.LoginLogout {
+    public func esEvent(loginLogout es: UnsafePointer<es_event_login_logout_t>) -> ESEvent.LoginLogout {
         .init(username: esString(es.pointee.username), uid: es.pointee.uid)
     }
     
-    func esEvent(btmLaunchItemAdd es: UnsafePointer<es_event_btm_launch_item_add_t>) -> ESEvent.BTMLaunchItemAdd {
+    public func esEvent(btmLaunchItemAdd es: UnsafePointer<es_event_btm_launch_item_add_t>) -> ESEvent.BTMLaunchItemAdd {
         /* instigatorToken and appToken are available only if message version >= 8 */
         .init(
             instigator: es.pointee.instigator.flatMap(esProcess),
@@ -1051,7 +1051,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(btmLaunchItemRemove es: UnsafePointer<es_event_btm_launch_item_remove_t>) -> ESEvent.BTMLaunchItemRemove {
+    public func esEvent(btmLaunchItemRemove es: UnsafePointer<es_event_btm_launch_item_remove_t>) -> ESEvent.BTMLaunchItemRemove {
         /* instigatorToken and appToken are available only if message version >= 8 */
         .init(
             instigator: es.pointee.instigator.flatMap(esProcess),
@@ -1062,7 +1062,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(profileAdd es: es_event_profile_add_t) -> ESEvent.ProfileAdd {
+    public func esEvent(profileAdd es: es_event_profile_add_t) -> ESEvent.ProfileAdd {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1071,7 +1071,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(profileRemove es: es_event_profile_remove_t) -> ESEvent.ProfileRemove {
+    public func esEvent(profileRemove es: es_event_profile_remove_t) -> ESEvent.ProfileRemove {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1079,7 +1079,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(su es: es_event_su_t) -> ESEvent.SU {
+    public func esEvent(su es: es_event_su_t) -> ESEvent.SU {
         .init(
             success: es.success,
             failureMessage: esStringOptional(es.failure_message),
@@ -1093,7 +1093,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(authorizationPetition es: es_event_authorization_petition_t) -> ESEvent.AuthorizationPetition {
+    public func esEvent(authorizationPetition es: es_event_authorization_petition_t) -> ESEvent.AuthorizationPetition {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1104,7 +1104,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(authorizationJudgement es: es_event_authorization_judgement_t) -> ESEvent.AuthorizationJudgement {
+    public func esEvent(authorizationJudgement es: es_event_authorization_judgement_t) -> ESEvent.AuthorizationJudgement {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1121,7 +1121,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(sudo es: es_event_sudo_t) -> ESEvent.SUDO {
+    public func esEvent(sudo es: es_event_sudo_t) -> ESEvent.SUDO {
         .init(
             success: es.success,
             rejectInfo: es.reject_info.flatMap {
@@ -1139,7 +1139,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odGroupAdd es: es_event_od_group_add_t) throws -> ESEvent.ODGroupAdd {
+    public func esEvent(odGroupAdd es: es_event_od_group_add_t) throws -> ESEvent.ODGroupAdd {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1151,7 +1151,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odGroupRemove es: es_event_od_group_remove_t) throws -> ESEvent.ODGroupRemove {
+    public func esEvent(odGroupRemove es: es_event_od_group_remove_t) throws -> ESEvent.ODGroupRemove {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1163,7 +1163,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odGroupSet es: es_event_od_group_set_t) throws -> ESEvent.ODGroupSet {
+    public func esEvent(odGroupSet es: es_event_od_group_set_t) throws -> ESEvent.ODGroupSet {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1175,7 +1175,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odModifyPassword es: es_event_od_modify_password_t) -> ESEvent.ODModifyPassword {
+    public func esEvent(odModifyPassword es: es_event_od_modify_password_t) -> ESEvent.ODModifyPassword {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1187,7 +1187,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odDisableUser es: es_event_od_disable_user_t) -> ESEvent.ODDisableUser {
+    public func esEvent(odDisableUser es: es_event_od_disable_user_t) -> ESEvent.ODDisableUser {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1198,7 +1198,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odEnableUser es: es_event_od_enable_user_t) -> ESEvent.ODEnableUser {
+    public func esEvent(odEnableUser es: es_event_od_enable_user_t) -> ESEvent.ODEnableUser {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1209,7 +1209,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odAttributeValueAdd es: es_event_od_attribute_value_add_t) -> ESEvent.ODAttributeValueAdd {
+    public func esEvent(odAttributeValueAdd es: es_event_od_attribute_value_add_t) -> ESEvent.ODAttributeValueAdd {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1223,7 +1223,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odAttributeValueRemove es: es_event_od_attribute_value_remove_t) -> ESEvent.ODAttributeValueRemove {
+    public func esEvent(odAttributeValueRemove es: es_event_od_attribute_value_remove_t) -> ESEvent.ODAttributeValueRemove {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1237,7 +1237,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odAttributeSet es: es_event_od_attribute_set_t) -> ESEvent.ODAttributeSet {
+    public func esEvent(odAttributeSet es: es_event_od_attribute_set_t) -> ESEvent.ODAttributeSet {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1254,7 +1254,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odCreateUser es: es_event_od_create_user_t) -> ESEvent.ODCreateUser {
+    public func esEvent(odCreateUser es: es_event_od_create_user_t) -> ESEvent.ODCreateUser {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1265,7 +1265,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odCreateGroup es: es_event_od_create_group_t) -> ESEvent.ODCreateGroup {
+    public func esEvent(odCreateGroup es: es_event_od_create_group_t) -> ESEvent.ODCreateGroup {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1276,7 +1276,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odDeleteUser es: es_event_od_delete_user_t) -> ESEvent.ODDeleteUser {
+    public func esEvent(odDeleteUser es: es_event_od_delete_user_t) -> ESEvent.ODDeleteUser {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1287,7 +1287,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(odDeleteGroup es: es_event_od_delete_group_t) -> ESEvent.ODDeleteGroup {
+    public func esEvent(odDeleteGroup es: es_event_od_delete_group_t) -> ESEvent.ODDeleteGroup {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: version >= 8 ? es.instigator_token : nil, /* field available only if message version >= 8 */
@@ -1298,11 +1298,11 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(xpcConnect es: es_event_xpc_connect_t) -> ESEvent.XPCConnect {
+    public func esEvent(xpcConnect es: es_event_xpc_connect_t) -> ESEvent.XPCConnect {
         .init(serviceName: esString(es.service_name), serviceDomainType: es.service_domain_type)
     }
     
-    func esEvent(gatekeeperUserOverride es: es_event_gatekeeper_user_override_t) throws -> ESEvent.GatekeeperUserOverride {
+    public func esEvent(gatekeeperUserOverride es: es_event_gatekeeper_user_override_t) throws -> ESEvent.GatekeeperUserOverride {
         let file: ESEvent.GatekeeperUserOverride.File = switch es.file_type {
         case ES_GATEKEEPER_USER_OVERRIDE_FILE_TYPE_FILE: .file(esFile(es.file.file))
         case ES_GATEKEEPER_USER_OVERRIDE_FILE_TYPE_PATH: .path(esString(es.file.file_path))
@@ -1319,7 +1319,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(tccModify es: es_event_tcc_modify_t) -> ESEvent.TCCModify {
+    public func esEvent(tccModify es: es_event_tcc_modify_t) -> ESEvent.TCCModify {
         .init(
             service: esString(es.service),
             identity: esString(es.identity),
@@ -1335,7 +1335,7 @@ public extension ESConverter {
     }
 
 #if compiler(>=6.4)
-    func esEvent(bootstrapCheckIn es: es_event_bootstrap_check_in_t) -> ESEvent.BootstrapCheckIn {
+    public func esEvent(bootstrapCheckIn es: es_event_bootstrap_check_in_t) -> ESEvent.BootstrapCheckIn {
         .init(
             instigator: esInstigator(es.instigator),
             instigatorToken: es.instigator_token,
@@ -1343,7 +1343,7 @@ public extension ESConverter {
         )
     }
     
-    func esEvent(bootstrapLookUp es: es_event_bootstrap_look_up_t) throws -> ESEvent.BootstrapLookUp {
+    public func esEvent(bootstrapLookUp es: es_event_bootstrap_look_up_t) throws -> ESEvent.BootstrapLookUp {
         let target: ESEvent.BootstrapLookUp.Target
         switch es.target_type {
         case ES_BOOTSTRAP_TARGET_TYPE_PROCESS:
@@ -1371,7 +1371,7 @@ public extension ESConverter {
         )
     }
     
-    func esLightweightCodeRequirement(_ es: es_lightweight_code_requirement_t) -> ESLightweightCodeRequirement {
+    public func esLightweightCodeRequirement(_ es: es_lightweight_code_requirement_t) -> ESLightweightCodeRequirement {
         .init(teamID: esStringOptional(es.team_id), signingID: esStringOptional(es.signing_id))
     }
 #endif

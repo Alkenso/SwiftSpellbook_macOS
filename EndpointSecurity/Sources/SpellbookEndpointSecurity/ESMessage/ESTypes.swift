@@ -342,12 +342,12 @@ public enum ESEvent: Equatable, Codable, Sendable {
     case gatekeeperUserOverride(GatekeeperUserOverride)
 }
 
-public extension ESEvent {
+extension ESEvent {
 
     /// Test file access
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct Access: Equatable, Codable, Sendable {
+public struct Access: Equatable, Codable, Sendable {
         /// Access permission to check
         public var mode: Int32
 
@@ -363,7 +363,7 @@ public extension ESEvent {
     /// Notification that an authentication was performed.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct Authentication: Equatable, Codable, Sendable {
+    public struct Authentication: Equatable, Codable, Sendable {
         /// True iff authentication was successful.
         public var success: Bool
 
@@ -377,7 +377,7 @@ public extension ESEvent {
     }
     
     /// Type-specific data describing the authentication.
-    enum AuthenticationType: Equatable, Codable, Sendable {
+    public enum AuthenticationType: Equatable, Codable, Sendable {
         case od(OD)
         case touchID(TouchID)
         case token(Token)
@@ -496,7 +496,7 @@ public extension ESEvent {
     /// `instigator_token` below.
     ///
     /// - Note: This event type does not support caching.
-    struct BootstrapCheckIn: Equatable, Codable, Sendable {
+    public struct BootstrapCheckIn: Equatable, Codable, Sendable {
         /// (Optional) The process that called `bootstrap_check_in()`. Best-effort; may be null if the instigator
         /// exited before the event was constructed.
         public var instigator: ESProcess?
@@ -525,7 +525,7 @@ public extension ESEvent {
     /// `instigator_token` below.
     ///
     /// - Note: This event type does not support caching.
-    struct BootstrapLookUp: Equatable, Codable, Sendable {
+    public struct BootstrapLookUp: Equatable, Codable, Sendable {
         /// (Optional) The process that called `bootstrap_look_up()`. Best-effort; may be null if the instigator
         /// exited before the event was constructed.
         public var instigator: ESProcess?
@@ -575,7 +575,7 @@ public extension ESEvent {
     /// - Note: May be emitted for items where an add was already seen previously, with or without the item having changed.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct BTMLaunchItemAdd: Equatable, Codable, Sendable {
+    public struct BTMLaunchItemAdd: Equatable, Codable, Sendable {
         /// Optional. Process that instigated the BTM operation (XPC caller that asked for the item to be added).
         public var instigator: ESProcess?
         
@@ -609,7 +609,7 @@ public extension ESEvent {
     /// daemons as well as login items added by the user, via MDM or by an app.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct BTMLaunchItemRemove: Equatable, Codable, Sendable {
+    public struct BTMLaunchItemRemove: Equatable, Codable, Sendable {
         /// Optional. Process that instigated the BTM operation (XPC caller that asked for the item to be removed).
         public var instigator: ESProcess?
         
@@ -637,7 +637,7 @@ public extension ESEvent {
     /// Change directories
     ///
     /// - Note: Cache key for this event type: (process executable file, target directory)
-    struct Chdir: Equatable, Codable, Sendable {
+    public struct Chdir: Equatable, Codable, Sendable {
         /// The desired new current working directory
         public var target: ESFile
         
@@ -649,7 +649,7 @@ public extension ESEvent {
     /// Change the root directory for a process
     ///
     /// - Note: Cache key for this event type: (process executable file, target directory)
-    struct Chroot: Equatable, Codable, Sendable {
+    public struct Chroot: Equatable, Codable, Sendable {
         /// The directory which will be the new root
         public var target: ESFile
         
@@ -661,7 +661,7 @@ public extension ESEvent {
     /// Clone a file
     ///
     /// - Note: This event type does not support caching.
-    struct Clone: Equatable, Codable, Sendable {
+    public struct Clone: Equatable, Codable, Sendable {
         /// The file that will be cloned
         public var source: ESFile
 
@@ -686,7 +686,7 @@ public extension ESEvent {
     /// nor write or close events.
     ///
     /// - Note: This event type does not support caching.
-    struct CopyFile: Equatable, Codable, Sendable {
+    public struct CopyFile: Equatable, Codable, Sendable {
         /// The file that will be cloned
         public var source: ESFile
 
@@ -727,7 +727,7 @@ public extension ESEvent {
     ///
     /// The `modified` flag only reflects that a file was or was not modified by filesystem syscall. If a file was
     /// only modifed though a memory mapping this flag will be false, but was_mapped_writable will be true.
-    struct Close: Equatable, Codable, Sendable {
+    public struct Close: Equatable, Codable, Sendable {
         /// Set to TRUE if the target file being closed has been modified
         public var modified: Bool
 
@@ -760,7 +760,7 @@ public extension ESEvent {
     /// to racing VFS operations.
     ///
     /// - Note: This event type does not support caching.
-    struct Create: Equatable, Codable, Sendable {
+    public struct Create: Equatable, Codable, Sendable {
         /// Information about the destination of the new file (see note)
         public var destination: Destination
         
@@ -801,7 +801,7 @@ public extension ESEvent {
     /// Delete an extended attribute
     ///
     /// - Note: This event type does not support caching.
-    struct DeleteExtAttr: Equatable, Codable, Sendable {
+    public struct DeleteExtAttr: Equatable, Codable, Sendable {
         /// The file for which the extended attribute will be deleted
         public var target: ESFile
 
@@ -817,7 +817,7 @@ public extension ESEvent {
     /// Duplicate a file descriptor
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct Dup: Equatable, Codable, Sendable {
+    public struct Dup: Equatable, Codable, Sendable {
         /// Describes the file the duplicated file descriptor points to
         public var target: ESFile
         
@@ -829,7 +829,7 @@ public extension ESEvent {
     /// Exchange data atomically between two files
     ///
     /// - Note: This event type does not support caching.
-    struct ExchangeData: Equatable, Codable, Sendable {
+    public struct ExchangeData: Equatable, Codable, Sendable {
         /// The first file to be exchanged
         public var file1: ESFile
 
@@ -871,7 +871,7 @@ public extension ESEvent {
     /// - Note: Cache key for this event type: (process executable file, target executable file)
     ///
     /// - Note: Caching is not supported when `script` is nonnull
-    struct Exec: Equatable, Codable, Sendable {
+    public struct Exec: Equatable, Codable, Sendable {
         /// The new process that is being executed
         public var target: ESProcess
 
@@ -923,7 +923,7 @@ public extension ESEvent {
     /// Terminate a process
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct Exit: Equatable, Codable, Sendable {
+    public struct Exit: Equatable, Codable, Sendable {
         /// The exit status of a process (same format as wait(2))
         public var status: Int32
         
@@ -935,7 +935,7 @@ public extension ESEvent {
     /// Materialize a file via the FileProvider framework
     ///
     /// - Note: This event type does not support caching.
-    struct FileProviderMaterialize: Equatable, Codable, Sendable {
+    public struct FileProviderMaterialize: Equatable, Codable, Sendable {
         /// The process that instigated the materialize operation.
         public var instigator: ESProcess?
 
@@ -959,7 +959,7 @@ public extension ESEvent {
     /// Update file contents via the FileProvider framework
     ///
     /// - Note: This event type does not support caching.
-    struct FileProviderUpdate: Equatable, Codable, Sendable {
+    public struct FileProviderUpdate: Equatable, Codable, Sendable {
         /// The staged file that has had its contents updated
         public var source: ESFile
 
@@ -975,7 +975,7 @@ public extension ESEvent {
     /// File control
     ///
     /// - Note: This event type does not support caching.
-    struct Fcntl: Equatable, Codable, Sendable {
+    public struct Fcntl: Equatable, Codable, Sendable {
         /// The target file on which the file control command will be performed
         public var target: ESFile
 
@@ -991,7 +991,7 @@ public extension ESEvent {
     /// Fork a new process
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct Fork: Equatable, Codable, Sendable {
+    public struct Fork: Equatable, Codable, Sendable {
         /// The child process that was created
         public var child: ESProcess
         
@@ -1006,7 +1006,7 @@ public extension ESEvent {
     /// to racing VFS operations.
     ///
     /// - Note: Cache key for this event type: (process executable file, target file)
-    struct FsGetPath: Equatable, Codable, Sendable {
+    public struct FsGetPath: Equatable, Codable, Sendable {
         /// Describes the file system path that will be retrieved
         public var target: ESFile
         
@@ -1026,7 +1026,7 @@ public extension ESEvent {
     /// acquiring task control ports may result in breaking system functionality in potentially fatal ways.
     ///
     /// - Note: Cache key for this event type: (process executable file, target executable file)
-    struct GetTask: Equatable, Codable, Sendable {
+    public struct GetTask: Equatable, Codable, Sendable {
         /// The process for which the task control port will be retrieved.
         public var target: ESProcess
         
@@ -1045,7 +1045,7 @@ public extension ESEvent {
     /// Get a process's task read port
     ///
     /// - Note: Cache key for this event type: (process executable file, target executable file)
-    struct GetTaskRead: Equatable, Codable, Sendable {
+    public struct GetTaskRead: Equatable, Codable, Sendable {
         /// The process for which the task read port will be retrieved.
         public var target: ESProcess
         
@@ -1064,7 +1064,7 @@ public extension ESEvent {
     /// Get a process's task inspect port
     ///
     /// - Note: This event type does not support caching.
-    struct GetTaskInspect: Equatable, Codable, Sendable {
+    public struct GetTaskInspect: Equatable, Codable, Sendable {
         /// The process for which the task inspect port will be retrieved.
         public var target: ESProcess
         
@@ -1083,7 +1083,7 @@ public extension ESEvent {
     /// Get a process's task name port
     ///
     /// - Note: This event type does not support caching.
-    struct GetTaskName: Equatable, Codable, Sendable {
+    public struct GetTaskName: Equatable, Codable, Sendable {
         /// The process for which the task name port will be retrieved.
         public var target: ESProcess
         
@@ -1102,7 +1102,7 @@ public extension ESEvent {
     /// Retrieve file system attributes
     ///
     /// - Note: Cache key for this event type: (process executable file, target file)
-    struct GetAttrList: Equatable, Codable, Sendable {
+    public struct GetAttrList: Equatable, Codable, Sendable {
         /// The attributes that will be retrieved
         public var attrlist: attrlist
 
@@ -1118,7 +1118,7 @@ public extension ESEvent {
     /// Retrieve an extended attribute
     ///
     /// - Note: Cache key for this event type: (process executable file, target file)
-    struct GetExtAttr: Equatable, Codable, Sendable {
+    public struct GetExtAttr: Equatable, Codable, Sendable {
         /// The file for which the extended attribute will be retrieved
         public var target: ESFile
 
@@ -1134,7 +1134,7 @@ public extension ESEvent {
     /// Open a connection to an I/O Kit IOService
     ///
     /// - Note: This event type does not support caching.
-    struct IOKitOpen: Equatable, Codable, Sendable {
+    public struct IOKitOpen: Equatable, Codable, Sendable {
         /// A constant specifying the type of connection to be created, interpreted only by the IOService's family.
         /// This field corresponds to the type argument to IOServiceOpen().
         public var userClientType: UInt32
@@ -1169,7 +1169,7 @@ public extension ESEvent {
     ///
     /// - Note: Not all AUTH_KEXTLOAD events can be delivered. In rare circumstances when kextloading is blocking all
     /// userspace execution it will be automatically allowed. NOTIFY_KEXTLOAD will still be (eventually) delivered.
-    struct KextLoad: Equatable, Codable, Sendable {
+    public struct KextLoad: Equatable, Codable, Sendable {
         /// The signing identifier of the kext being loaded
         public var identifier: String
         
@@ -1181,7 +1181,7 @@ public extension ESEvent {
     /// Unload a kernel extension
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct KextUnload: Equatable, Codable, Sendable {
+    public struct KextUnload: Equatable, Codable, Sendable {
         /// The signing identifier of the kext being unloaded
         public var identifier: String
         
@@ -1193,7 +1193,7 @@ public extension ESEvent {
     /// Notification for authenticated login event from /usr/bin/login.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct LoginLogin: Equatable, Codable, Sendable {
+    public struct LoginLogin: Equatable, Codable, Sendable {
         /// True iff login was successful.
         public var success: Bool
 
@@ -1217,7 +1217,7 @@ public extension ESEvent {
     /// Notification for authenticated logout event from /usr/bin/login.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct LoginLogout: Equatable, Codable, Sendable {
+    public struct LoginLogout: Equatable, Codable, Sendable {
         /// Username used for login.
         public var username: String
 
@@ -1233,7 +1233,7 @@ public extension ESEvent {
     /// Link to a file
     ///
     /// - Note: This event type does not support caching.
-    struct Link: Equatable, Codable, Sendable {
+    public struct Link: Equatable, Codable, Sendable {
         /// The existing object to which a hard link will be created
         public var source: ESFile
 
@@ -1253,7 +1253,7 @@ public extension ESEvent {
     /// List extended attributes of a file
     ///
     /// - Note: Cache key for this event type: (process executable file, target file)
-    struct ListExtAttr: Equatable, Codable, Sendable {
+    public struct ListExtAttr: Equatable, Codable, Sendable {
         /// The file for which extended attributes are being retrieved
         public var target: ESFile
         
@@ -1267,7 +1267,7 @@ public extension ESEvent {
     /// - Note: The `relative_target` data may contain untrusted user input.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct Lookup: Equatable, Codable, Sendable {
+    public struct Lookup: Equatable, Codable, Sendable {
         /// The current directory
         public var sourceDir: ESFile
 
@@ -1289,7 +1289,7 @@ public extension ESEvent {
     /// /** Notification that LoginWindow has logged in a user.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct LWSessionLogin: Equatable, Codable, Sendable {
+    public struct LWSessionLogin: Equatable, Codable, Sendable {
         /// Short username of the user.
         public var username: String
 
@@ -1302,14 +1302,14 @@ public extension ESEvent {
         }
     }
     
-    typealias LWSessionLogout = LWSessionLogin
-    typealias LWSessionLock = LWSessionLogin
-    typealias LWSessionUnlock = LWSessionLogin
+    public typealias LWSessionLogout = LWSessionLogin
+    public typealias LWSessionLock = LWSessionLogin
+    public typealias LWSessionUnlock = LWSessionLogin
     
     /// Memory map a file
     ///
     /// - Note: Cache key for this event type: (process executable file, source file)
-    struct MMap: Equatable, Codable, Sendable {
+    public struct MMap: Equatable, Codable, Sendable {
         /// The protection (region accessibility) value
         public var protection: Int32
 
@@ -1337,7 +1337,7 @@ public extension ESEvent {
     /// Mount a file system
     ///
     /// - Note: Cache key for this event type: (process executable file, mount point)
-    struct Mount: Equatable, Codable, Sendable {
+    public struct Mount: Equatable, Codable, Sendable {
         /// The file system stats for the file system being mounted
         public var statfs: statfs
         
@@ -1353,7 +1353,7 @@ public extension ESEvent {
     /// Control protection of pages
     ///
     /// - Note: This event type does not support caching.
-    struct MProtect: Equatable, Codable, Sendable {
+    public struct MProtect: Equatable, Codable, Sendable {
         /// The desired new protection value
         public var protection: Int32
 
@@ -1379,7 +1379,7 @@ public extension ESEvent {
     /// - Note: Cache key for this event type: (process executable file, file that will be opened)
     ///
     /// - Note: fcntl.h
-    struct Open: Equatable, Codable, Sendable {
+    public struct Open: Equatable, Codable, Sendable {
         /// The desired flags to be used when opening `file` (see note)
         public var fflag: Int32
 
@@ -1398,7 +1398,7 @@ public extension ESEvent {
     /// non-interactive commands will emit only a single successful login event.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct OpensshLogin: Equatable, Codable, Sendable {
+    public struct OpensshLogin: Equatable, Codable, Sendable {
         /// True iff login was successful.
         public var success: Bool
 
@@ -1433,7 +1433,7 @@ public extension ESEvent {
     /// non-interactive commands will emit only a single logout event.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct OpensshLogout: Equatable, Codable, Sendable {
+    public struct OpensshLogout: Equatable, Codable, Sendable {
         /// Type of address used in the connection.
         public var sourceAddressType: es_address_type_t
 
@@ -1457,7 +1457,7 @@ public extension ESEvent {
     /// Access control check for retrieving process information.
     ///
     /// - Note: Cache key for this event type: (process executable file, target process executable file, type)
-    struct ProcCheck: Equatable, Codable, Sendable {
+    public struct ProcCheck: Equatable, Codable, Sendable {
         /// The process for which the access will be checked
         public var target: ESProcess?
 
@@ -1477,7 +1477,7 @@ public extension ESEvent {
     /// Fired when one of pid_suspend, pid_resume or pid_shutdown_sockets is called on a process.
     ///
     /// - Note: This event type does not support caching.
-    struct ProcSuspendResume: Equatable, Codable, Sendable {
+    public struct ProcSuspendResume: Equatable, Codable, Sendable {
         /// The process that is being suspended, resumed, or is the object of a pid_shutdown_sockets call.
         public var target: ESProcess?
 
@@ -1493,7 +1493,7 @@ public extension ESEvent {
     /// Notification for Profiles installed on the system.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct ProfileAdd: Equatable, Codable, Sendable {
+    public struct ProfileAdd: Equatable, Codable, Sendable {
         /// Process that instigated the Profile install or update.
         public var instigator: ESProcess?
 
@@ -1517,7 +1517,7 @@ public extension ESEvent {
     /// Notification for Profiles removed on the system.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct ProfileRemove: Equatable, Codable, Sendable {
+    public struct ProfileRemove: Equatable, Codable, Sendable {
         /// Process that instigated the Profile removal.
         public var instigator: ESProcess?
 
@@ -1537,7 +1537,7 @@ public extension ESEvent {
     /// Fired when a pseudoterminal control device is closed
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct PtyClose: Equatable, Codable, Sendable {
+    public struct PtyClose: Equatable, Codable, Sendable {
         /// Major and minor numbers of device
         public var dev: dev_t
         
@@ -1549,7 +1549,7 @@ public extension ESEvent {
     /// Fired when a pseudoterminal control device is granted
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct PtyGrant: Equatable, Codable, Sendable {
+    public struct PtyGrant: Equatable, Codable, Sendable {
         /// Major and minor numbers of device
         public var dev: dev_t
         
@@ -1561,7 +1561,7 @@ public extension ESEvent {
     /// Read directory entries
     ///
     /// - Note: Cache key for this event type: (process executable file, target directory)
-    struct Readdir: Equatable, Codable, Sendable {
+    public struct Readdir: Equatable, Codable, Sendable {
         /// The directory whose contents will be read
         public var target: ESFile
         
@@ -1574,7 +1574,7 @@ public extension ESEvent {
     ///
     /// - Note: This is not limited only to readlink(2). Other operations such as path lookups can also cause this event to
     /// be fired.
-    struct Readlink: Equatable, Codable, Sendable {
+    public struct Readlink: Equatable, Codable, Sendable {
         /// The symbolic link that is attempting to be resolved
         public var source: ESFile
         
@@ -1587,7 +1587,7 @@ public extension ESEvent {
     /// thread_create or thread_create_running MIG routines.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct RemoteThreadCreate: Equatable, Codable, Sendable {
+    public struct RemoteThreadCreate: Equatable, Codable, Sendable {
         /// The process in which a new thread was created
         public var target: ESProcess
 
@@ -1603,7 +1603,7 @@ public extension ESEvent {
     /// Remount a file system
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct Remount: Equatable, Codable, Sendable {
+    public struct Remount: Equatable, Codable, Sendable {
         /// The file system stats for the file system being remounted
         public var statfs: statfs
         
@@ -1630,7 +1630,7 @@ public extension ESEvent {
     /// to racing VFS operations.
     ///
     /// - Note: This event type does not support caching.
-    struct Rename: Equatable, Codable, Sendable {
+    public struct Rename: Equatable, Codable, Sendable {
         /// The source file that is being renamed
         public var source: ESFile
 
@@ -1656,7 +1656,7 @@ public extension ESEvent {
     /// - Note: This event is not emitted when a screensharing session has the same source and destination address. For
     /// example if device A is acting as a NAT gateway for device B, then a screensharing session from B -> A would
     /// not emit an event.
-    struct ScreensharingAttach: Equatable, Codable, Sendable {
+    public struct ScreensharingAttach: Equatable, Codable, Sendable {
         /// True iff Screen Sharing successfully attached.
         public var success: Bool
 
@@ -1706,7 +1706,7 @@ public extension ESEvent {
     /// - Note: This event type does not support caching (notify-only).
     ///
     /// - Note: This event is not emitted when a screensharing session has the same source and destination address.
-    struct ScreensharingDetach: Equatable, Codable, Sendable {
+    public struct ScreensharingDetach: Equatable, Codable, Sendable {
         /// Type of source address.
         public var sourceAddressType: es_address_type_t
 
@@ -1733,7 +1733,7 @@ public extension ESEvent {
     /// Access control check for searching a volume or a mounted file system
     ///
     /// - Note: Cache key for this event type: (process executable file, target file)
-    struct SearchFS: Equatable, Codable, Sendable {
+    public struct SearchFS: Equatable, Codable, Sendable {
         /// The attributes that will be used to do the search
         public var attrlist: attrlist
 
@@ -1749,7 +1749,7 @@ public extension ESEvent {
     /// Set a file ACL.
     ///
     /// - Note: This event type does not support caching.
-    struct SetACL: Equatable, Codable, Sendable {
+    public struct SetACL: Equatable, Codable, Sendable {
         /// Describes the file whose ACL is being set.
         public var target: ESFile
 
@@ -1778,7 +1778,7 @@ public extension ESEvent {
     /// Set file system attributes
     ///
     /// - Note: This event type does not support caching.
-    struct SetAttrList: Equatable, Codable, Sendable {
+    public struct SetAttrList: Equatable, Codable, Sendable {
         /// The attributes that will be modified
         public var attrlist: attrlist
 
@@ -1794,7 +1794,7 @@ public extension ESEvent {
     /// Set an extended attribute
     ///
     /// - Note: This event type does not support caching.
-    struct SetExtAttr: Equatable, Codable, Sendable {
+    public struct SetExtAttr: Equatable, Codable, Sendable {
         /// The file for which the extended attribute will be set
         public var target: ESFile
 
@@ -1813,7 +1813,7 @@ public extension ESEvent {
     /// current set of flags.
     ///
     /// - Note: Cache key for this event type: (process executable file, target file)
-    struct SetFlags: Equatable, Codable, Sendable {
+    public struct SetFlags: Equatable, Codable, Sendable {
         /// The desired new flags
         public var flags: UInt32
 
@@ -1832,7 +1832,7 @@ public extension ESEvent {
     /// mode.
     ///
     /// - Note: Cache key for this event type: (process executable file, target file)
-    struct SetMode: Equatable, Codable, Sendable {
+    public struct SetMode: Equatable, Codable, Sendable {
         /// The desired new mode
         public var mode: mode_t
 
@@ -1851,7 +1851,7 @@ public extension ESEvent {
     /// the current uid and gid values.
     ///
     /// - Note: Cache key for this event type: (process executable file, target file)
-    struct SetOwner: Equatable, Codable, Sendable {
+    public struct SetOwner: Equatable, Codable, Sendable {
         /// The desired new UID
         public var uid: uid_t
 
@@ -1871,7 +1871,7 @@ public extension ESEvent {
     /// Notification that a process has called setegid().
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct SetUID: Equatable, Codable, Sendable {
+    public struct SetUID: Equatable, Codable, Sendable {
         /// The egid argument to the setegid() syscall.
         public var uid: uid_t
         
@@ -1883,7 +1883,7 @@ public extension ESEvent {
     /// Notification that a process has called setregid().
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct SetREUID: Equatable, Codable, Sendable {
+    public struct SetREUID: Equatable, Codable, Sendable {
         /// The rgid argument to the setregid() syscall.
         public var ruid: uid_t
 
@@ -1918,7 +1918,7 @@ public extension ESEvent {
     /// - Note: This event type does not support caching.
     ///
     /// - Note: Be aware of the nullablity of some of the fields. The instigator may not be applicable.
-    struct Signal: Equatable, Codable, Sendable {
+    public struct Signal: Equatable, Codable, Sendable {
         /// The signal number to be delivered
         public var sig: Int32
 
@@ -1938,7 +1938,7 @@ public extension ESEvent {
     /// View stat information of a file
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct Stat: Equatable, Codable, Sendable {
+    public struct Stat: Equatable, Codable, Sendable {
         /// The file for which stat information will be retrieved
         public var target: ESFile
         
@@ -1950,7 +1950,7 @@ public extension ESEvent {
     /// TCC Modification Event. Occurs when a TCC permission is granted or revoked.
     ///
     /// - Note: This event type does not support caching.
-    struct TCCModify: Equatable, Codable, Sendable {
+    public struct TCCModify: Equatable, Codable, Sendable {
         /// The TCC service for which permissions are being modified.
         public var service: String
         
@@ -2001,7 +2001,7 @@ public extension ESEvent {
     /// being attached is reparented during the operation
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct Trace: Equatable, Codable, Sendable {
+    public struct Trace: Equatable, Codable, Sendable {
         /// The process that will be attached to by the process that instigated the event
         public var target: ESProcess
         
@@ -2013,7 +2013,7 @@ public extension ESEvent {
     /// Truncate a file
     ///
     /// - Note: This event type does not support caching.
-    struct Truncate: Equatable, Codable, Sendable {
+    public struct Truncate: Equatable, Codable, Sendable {
         /// The file that is being truncated
         public var target: ESFile
         
@@ -2025,7 +2025,7 @@ public extension ESEvent {
     /// Fired when a UNIX-domain socket is about to be bound to a path.
     ///
     /// - Note: This event type does not support caching.
-    struct UipcBind: Equatable, Codable, Sendable {
+    public struct UipcBind: Equatable, Codable, Sendable {
         /// Describes the directory the socket file is created in.
         public var dir: ESFile
 
@@ -2045,7 +2045,7 @@ public extension ESEvent {
     /// Fired when a UNIX-domain socket is about to be connected.
     ///
     /// - Note: Cache key for this event type: (process executable file, socket file)
-    struct UipcConnect: Equatable, Codable, Sendable {
+    public struct UipcConnect: Equatable, Codable, Sendable {
         /// Describes the socket file that the socket is bound to.
         public var file: ESFile
 
@@ -2070,7 +2070,7 @@ public extension ESEvent {
     /// to racing VFS operations.
     ///
     /// - Note: This event type does not support caching.
-    struct Unlink: Equatable, Codable, Sendable {
+    public struct Unlink: Equatable, Codable, Sendable {
         /// The object that will be removed
         public var target: ESFile
 
@@ -2086,7 +2086,7 @@ public extension ESEvent {
     /// Unmount a file system
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct Unmount: Equatable, Codable, Sendable {
+    public struct Unmount: Equatable, Codable, Sendable {
         /// The file system stats for the file system being unmounted
         public var statfs: statfs
         
@@ -2098,7 +2098,7 @@ public extension ESEvent {
     /// Change file access and modification times (e.g. via utimes(2))
     ///
     /// - Note: Cache key for this event type: (process executable file, target file)
-    struct Utimes: Equatable, Codable, Sendable {
+    public struct Utimes: Equatable, Codable, Sendable {
         /// The path which will have its times modified
         public var target: ESFile
 
@@ -2118,7 +2118,7 @@ public extension ESEvent {
     /// Write to a file
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct Write: Equatable, Codable, Sendable {
+    public struct Write: Equatable, Codable, Sendable {
         /// The file being written to
         public var target: ESFile
         
@@ -2133,7 +2133,7 @@ public extension ESEvent {
     /// xp_malware_remediated events.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct XPMalwareDetected: Equatable, Codable, Sendable {
+    public struct XPMalwareDetected: Equatable, Codable, Sendable {
         /// Version of the signatures used for detection. Currently corresponds to XProtect version.
         public var signatureVersion: String
 
@@ -2165,7 +2165,7 @@ public extension ESEvent {
     /// xp_malware_remediated events.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct XPMalwareRemediated: Equatable, Codable, Sendable {
+    public struct XPMalwareRemediated: Equatable, Codable, Sendable {
         /// Version of the signatures used for remediation. Currently corresponds to XProtect version.
         public var signatureVersion: String
 
@@ -2209,7 +2209,7 @@ public extension ESEvent {
     /// - Note: This event type does not support caching (notify-only). Should always emit on success but will only emit on
     /// security relevant failures. For example, Endpoint Security clients will not get an event for su being passed
     /// invalid command line arguments.
-    struct SU: Equatable, Codable, Sendable {
+    public struct SU: Equatable, Codable, Sendable {
         /// True iff su was successful.
         public var success: Bool
 
@@ -2253,7 +2253,7 @@ public extension ESEvent {
     /// Notification for a sudo event.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct SUDO: Equatable, Codable, Sendable {
+    public struct SUDO: Equatable, Codable, Sendable {
         /// True iff sudo was successful
         public var success: Bool
 
@@ -2307,7 +2307,7 @@ public extension ESEvent {
     /// Notification that a process peititioned for certain authorization rights
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct AuthorizationPetition: Equatable, Codable, Sendable {
+    public struct AuthorizationPetition: Equatable, Codable, Sendable {
         /// Process that submitted the petition (XPC caller)
         public var instigator: ESProcess?
         
@@ -2339,7 +2339,7 @@ public extension ESEvent {
     /// Notification that a process had it's right petition judged
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct AuthorizationJudgement: Equatable, Codable, Sendable {
+    public struct AuthorizationJudgement: Equatable, Codable, Sendable {
         /// Process that submitted the petition (XPC caller)
         public var instigator: ESProcess?
         
@@ -2394,7 +2394,7 @@ public extension ESEvent {
     ///
     /// - Note: This event does not indicate that a member was actually added. For example when adding a user to a group
     /// they are already a member of.
-    struct ODGroupAdd: Equatable, Codable, Sendable {
+    public struct ODGroupAdd: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2436,7 +2436,7 @@ public extension ESEvent {
     ///
     /// - Note: This event does not indicate that a member was actually removed. For example when removing a user from a
     /// group they are not a member of.
-    struct ODGroupRemove: Equatable, Codable, Sendable {
+    public struct ODGroupRemove: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2478,7 +2478,7 @@ public extension ESEvent {
     ///
     /// - Note: This event does not indicate that a member was actually removed. For example when removing a user from a
     /// group they are not a member of.
-    struct ODGroupSet: Equatable, Codable, Sendable {
+    public struct ODGroupSet: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2517,7 +2517,7 @@ public extension ESEvent {
     /// Notification that an account had its password modified.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct ODModifyPassword: Equatable, Codable, Sendable {
+    public struct ODModifyPassword: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2556,7 +2556,7 @@ public extension ESEvent {
     /// Notification that a user account was disabled.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct ODDisableUser: Equatable, Codable, Sendable {
+    public struct ODDisableUser: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2591,7 +2591,7 @@ public extension ESEvent {
     /// Notification that a user account was enabled.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct ODEnableUser: Equatable, Codable, Sendable {
+    public struct ODEnableUser: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2630,7 +2630,7 @@ public extension ESEvent {
     /// - Note: Attributes conceptually have the type `Map String (Set String)`. Each OD record has a Map of attribute name
     /// to Set of attribute value. When an attribute value is added, it is inserted into the set of values for that
     /// name.
-    struct ODAttributeValueAdd: Equatable, Codable, Sendable {
+    public struct ODAttributeValueAdd: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2683,7 +2683,7 @@ public extension ESEvent {
     /// that name.
     ///
     /// - Note: Removing a value that was never added is a no-op.
-    struct ODAttributeValueRemove: Equatable, Codable, Sendable {
+    public struct ODAttributeValueRemove: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2736,7 +2736,7 @@ public extension ESEvent {
     /// replaced.
     ///
     /// - Note: The new set of attribute values may be empty.
-    struct ODAttributeSet: Equatable, Codable, Sendable {
+    public struct ODAttributeSet: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2783,7 +2783,7 @@ public extension ESEvent {
     /// Notification that a user account was created.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct ODCreateUser: Equatable, Codable, Sendable {
+    public struct ODCreateUser: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2818,7 +2818,7 @@ public extension ESEvent {
     /// Notification that a group was created.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct ODCreateGroup: Equatable, Codable, Sendable {
+    public struct ODCreateGroup: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2853,7 +2853,7 @@ public extension ESEvent {
     /// Notification that a user account was deleted.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct ODDeleteUser: Equatable, Codable, Sendable {
+    public struct ODDeleteUser: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2888,7 +2888,7 @@ public extension ESEvent {
     /// Notification that a group was deleted.
     ///
     /// - Note: This event type does not support caching (notify-only).
-    struct ODDeleteGroup: Equatable, Codable, Sendable {
+    public struct ODDeleteGroup: Equatable, Codable, Sendable {
         /// Process that instigated operation (XPC caller).
         public var instigator: ESProcess?
         
@@ -2923,7 +2923,7 @@ public extension ESEvent {
     /// Notification for an XPC connection being established to a named service.
     ///
     /// - Note: This event type does not support caching.
-    struct XPCConnect: Equatable, Codable, Sendable {
+    public struct XPCConnect: Equatable, Codable, Sendable {
         /// Service name of the named service.
         public var serviceName: String
         
@@ -2943,7 +2943,7 @@ public extension ESEvent {
     /// - Note: Hashes are calculated in usermode by Gatekeeper. There is no guarantee that any other program including the
     /// kernel will observe the same file at the reported path. Furthermore there is no guarantee that the CDHash is
     /// valid or that it matches the containing binary.
-    struct GatekeeperUserOverride: Equatable, Codable, Sendable {
+    public struct GatekeeperUserOverride: Equatable, Codable, Sendable {
         /// Describes the target file that is being overridden by the user
         public var file: File
         
