@@ -183,7 +183,7 @@ public extension ESConverter {
             managed: es.pointee.managed,
             uid: es.pointee.uid,
             itemURL: esString(es.pointee.item_url),
-            appURL: esString(es.pointee.app_url)
+            appURL: esStringOptional(es.pointee.app_url)
         )
     }
     
@@ -904,7 +904,7 @@ public extension ESConverter {
                 recordType: esString(es.pointee.data.od.pointee.record_type),
                 recordName: esString(es.pointee.data.od.pointee.record_name),
                 nodeName: esString(es.pointee.data.od.pointee.node_name),
-                dbPath: esString(es.pointee.data.od.pointee.db_path)
+                dbPath: esStringOptional(es.pointee.data.od.pointee.db_path)
             ))
         case ES_AUTHENTICATION_TYPE_TOUCHID:
             type = .touchID(.init(
@@ -919,7 +919,7 @@ public extension ESConverter {
                 instigatorToken: version >= 8 ? es.pointee.data.token.pointee.instigator_token : nil, /* field available only if message version >= 8 */
                 pubkeyHash: esString(es.pointee.data.token.pointee.pubkey_hash),
                 tokenID: esString(es.pointee.data.token.pointee.token_id),
-                kerberosPrincipal: esString(es.pointee.data.token.pointee.kerberos_principal)
+                kerberosPrincipal: esStringOptional(es.pointee.data.token.pointee.kerberos_principal)
             ))
         case ES_AUTHENTICATION_TYPE_AUTO_UNLOCK:
             type = .autoUnlock(.init(
@@ -950,7 +950,7 @@ public extension ESConverter {
             actionType: esString(es.pointee.action_type),
             success: es.pointee.success,
             resultDescription: esString(es.pointee.result_description),
-            remediatedPath: esString(es.pointee.remediated_path),
+            remediatedPath: esStringOptional(es.pointee.remediated_path),
             remediatedProcessAuditToken: es.pointee.remediated_process_audit_token?.pointee
         )
     }
@@ -987,11 +987,11 @@ public extension ESConverter {
         .init(
             success: es.pointee.success,
             sourceAddressType: es.pointee.source_address_type,
-            sourceAddress: esString(es.pointee.source_address),
-            viewerAppleID: esString(es.pointee.viewer_appleid),
+            sourceAddress: esStringOptional(es.pointee.source_address),
+            viewerAppleID: esStringOptional(es.pointee.viewer_appleid),
             authenticationType: esString(es.pointee.authentication_type),
-            authenticationUsername: esString(es.pointee.authentication_username),
-            sessionUsername: esString(es.pointee.session_username),
+            authenticationUsername: esStringOptional(es.pointee.authentication_username),
+            sessionUsername: esStringOptional(es.pointee.session_username),
             existingSession: es.pointee.existing_session,
             graphicalSessionID: es.pointee.graphical_session_id
         )
@@ -1000,8 +1000,8 @@ public extension ESConverter {
     func esEvent(screensharingDetach es: UnsafePointer<es_event_screensharing_detach_t>) -> ESEvent.ScreensharingDetach {
         .init(
             sourceAddressType: es.pointee.source_address_type,
-            sourceAddress: esString(es.pointee.source_address),
-            viewerAppleID: esString(es.pointee.viewer_appleid),
+            sourceAddress: esStringOptional(es.pointee.source_address),
+            viewerAppleID: esStringOptional(es.pointee.viewer_appleid),
             graphicalSessionID: es.pointee.graphical_session_id
         )
     }
@@ -1029,7 +1029,7 @@ public extension ESConverter {
     func esEvent(loginLogin es: UnsafePointer<es_event_login_login_t>) -> ESEvent.LoginLogin {
         .init(
             success: es.pointee.success,
-            failureMessage: esString(es.pointee.failure_message),
+            failureMessage: esStringOptional(es.pointee.failure_message),
             username: esString(es.pointee.username),
             uid: es.pointee.has_uid ? es.pointee.uid.uid : nil
         )
@@ -1045,7 +1045,7 @@ public extension ESConverter {
             instigator: es.pointee.instigator.flatMap(esProcess),
             app: es.pointee.app.flatMap(esProcess),
             item: esBTMLaunchItem(es.pointee.item),
-            executablePath: esString(es.pointee.executable_path),
+            executablePath: esStringOptional(es.pointee.executable_path),
             instigatorToken: version >= 8 ? es.pointee.instigator_token?.pointee : nil,
             appToken: version >= 8 ? es.pointee.app_token?.pointee : nil
         )
@@ -1082,12 +1082,12 @@ public extension ESConverter {
     func esEvent(su es: es_event_su_t) -> ESEvent.SU {
         .init(
             success: es.success,
-            failureMessage: esString(es.failure_message),
+            failureMessage: esStringOptional(es.failure_message),
             fromUID: es.from_uid,
             fromUsername: esString(es.from_username),
             toUID: es.has_to_uid ? es.to_uid.uid : nil,
-            toUsername: esString(es.to_username),
-            shell: esString(es.shell),
+            toUsername: esStringOptional(es.to_username),
+            shell: esStringOptional(es.shell),
             args: UnsafeBufferPointer(start: es.argv, count: es.argc).map(esString),
             env: UnsafeBufferPointer(start: es.env, count: es.env_count).map(esString)
         )
@@ -1132,10 +1132,10 @@ public extension ESConverter {
                 )
             },
             fromUID: es.has_from_uid ? es.from_uid.uid : nil,
-            fromUsername: esString(es.from_username),
+            fromUsername: esStringOptional(es.from_username),
             toUID: es.has_to_uid ? es.to_uid.uid : nil,
-            toUsername: esString(es.to_username),
-            command: esString(es.command)
+            toUsername: esStringOptional(es.to_username),
+            command: esStringOptional(es.command)
         )
     }
     
@@ -1147,7 +1147,7 @@ public extension ESConverter {
             groupName: esString(es.group_name),
             member: try esODMemberID(es.member),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     
@@ -1159,7 +1159,7 @@ public extension ESConverter {
             groupName: esString(es.group_name),
             member: try esODMemberID(es.member),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     
@@ -1171,7 +1171,7 @@ public extension ESConverter {
             groupName: esString(es.group_name),
             members: try esODMemberIDs(es.members),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     
@@ -1183,7 +1183,7 @@ public extension ESConverter {
             accountType: es.account_type,
             accountName: esString(es.account_name),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     
@@ -1194,7 +1194,7 @@ public extension ESConverter {
             errorCode: es.error_code,
             userName: esString(es.user_name),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     
@@ -1205,7 +1205,7 @@ public extension ESConverter {
             errorCode: es.error_code,
             userName: esString(es.user_name),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     
@@ -1219,7 +1219,7 @@ public extension ESConverter {
             attributeName: esString(es.attribute_name),
             attributeValue: esString(es.attribute_value),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     
@@ -1233,7 +1233,7 @@ public extension ESConverter {
             attributeName: esString(es.attribute_name),
             attributeValue: esString(es.attribute_value),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     
@@ -1250,7 +1250,7 @@ public extension ESConverter {
                 count: es.attribute_value_count
             ).map(esString),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     
@@ -1261,7 +1261,7 @@ public extension ESConverter {
             errorCode: es.error_code,
             userName: esString(es.user_name),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     
@@ -1272,7 +1272,7 @@ public extension ESConverter {
             errorCode: es.error_code,
             groupName: esString(es.group_name),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     
@@ -1283,7 +1283,7 @@ public extension ESConverter {
             errorCode: es.error_code,
             userName: esString(es.user_name),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     
@@ -1294,7 +1294,7 @@ public extension ESConverter {
             errorCode: es.error_code,
             groupName: esString(es.group_name),
             nodeName: esString(es.node_name),
-            dbPath: esString(es.db_path)
+            dbPath: esStringOptional(es.db_path)
         )
     }
     

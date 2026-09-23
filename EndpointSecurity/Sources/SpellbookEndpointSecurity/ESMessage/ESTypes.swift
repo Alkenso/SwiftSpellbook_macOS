@@ -195,9 +195,9 @@ public struct BTMLaunchItem: Equatable, Codable, Sendable {
     public var managed: Bool
     public var uid: uid_t
     public var itemURL: String
-    public var appURL: String
+    public var appURL: String?
     
-    public init(itemType: es_btm_item_type_t, legacy: Bool, managed: Bool, uid: uid_t, itemURL: String, appURL: String) {
+    public init(itemType: es_btm_item_type_t, legacy: Bool, managed: Bool, uid: uid_t, itemURL: String, appURL: String?) {
         self.itemType = itemType
         self.legacy = legacy
         self.managed = managed
@@ -404,9 +404,9 @@ public extension ESEvent {
 
             /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
             /// authenticating.
-            public var dbPath: String
+            public var dbPath: String?
             
-            public init(instigator: ESProcess?, instigatorToken: audit_token_t?, recordType: String, recordName: String, nodeName: String, dbPath: String) {
+            public init(instigator: ESProcess?, instigatorToken: audit_token_t?, recordType: String, recordName: String, nodeName: String, dbPath: String?) {
                 self.instigator = instigator
                 self.instigatorToken = instigatorToken
                 self.recordType = recordType
@@ -453,9 +453,9 @@ public extension ESEvent {
 
             /// Optional. This will be available if token is used for GSS PKINIT authentication for obtaining a
             /// kerberos TGT. NULL in all other cases.
-            public var kerberosPrincipal: String
+            public var kerberosPrincipal: String?
             
-            public init(instigator: ESProcess?, instigatorToken: audit_token_t?, pubkeyHash: String, tokenID: String, kerberosPrincipal: String) {
+            public init(instigator: ESProcess?, instigatorToken: audit_token_t?, pubkeyHash: String, tokenID: String, kerberosPrincipal: String?) {
                 self.instigator = instigator
                 self.instigatorToken = instigatorToken
                 self.pubkeyHash = pubkeyHash
@@ -593,9 +593,9 @@ public extension ESEvent {
 
         /// Optional. If available and applicable, the POSIX executable path from the launchd plist. If the path is
         /// relative, it is relative to item->app_url.
-        public var executablePath: String
+        public var executablePath: String?
         
-        public init(instigator: ESProcess?, app: ESProcess?, item: BTMLaunchItem, executablePath: String, instigatorToken: audit_token_t? = nil, appToken: audit_token_t? = nil) {
+        public init(instigator: ESProcess?, app: ESProcess?, item: BTMLaunchItem, executablePath: String?, instigatorToken: audit_token_t? = nil, appToken: audit_token_t? = nil) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.app = app
@@ -1198,7 +1198,7 @@ public extension ESEvent {
         public var success: Bool
 
         /// Optional. Failure message generated.
-        public var failureMessage: String
+        public var failureMessage: String?
 
         /// Username used for login.
         public var username: String
@@ -1206,7 +1206,7 @@ public extension ESEvent {
         /// Describes whether or not the uid of the user logged in is available or not.
         public var uid: uid_t?
         
-        public init(success: Bool, failureMessage: String, username: String, uid: uid_t?) {
+        public init(success: Bool, failureMessage: String?, username: String, uid: uid_t?) {
             self.success = success
             self.failureMessage = failureMessage
             self.username = username
@@ -1665,22 +1665,22 @@ public extension ESEvent {
 
         /// Optional. Source address of connection, or NULL. Depending on the transport used, the source address may
         /// or may not be available.
-        public var sourceAddress: String
+        public var sourceAddress: String?
 
         /// Optional. For screen sharing initiated using an Apple ID (e.g., from Messages or FaceTime), this is the
         /// viewer's (client's) Apple ID. It is not necessarily the Apple ID that invited the screen sharing. NULL
         /// if unavailable.
-        public var viewerAppleID: String
+        public var viewerAppleID: String?
 
         /// Type of authentication.
         public var authenticationType: String
 
         /// Optional. Username used for authentication to Screen Sharing. NULL if authentication type doesn't use an
         /// username (e.g. simple VNC password).
-        public var authenticationUsername: String
+        public var authenticationUsername: String?
 
         /// Optional. Username of the loginwindow session if available, NULL otherwise.
-        public var sessionUsername: String
+        public var sessionUsername: String?
 
         /// True iff there was an existing user session.
         public var existingSession: Bool
@@ -1688,7 +1688,7 @@ public extension ESEvent {
         /// Graphical session id of the screen shared.
         public var graphicalSessionID: es_graphical_session_id_t
         
-        public init(success: Bool, sourceAddressType: es_address_type_t, sourceAddress: String, viewerAppleID: String, authenticationType: String, authenticationUsername: String, sessionUsername: String, existingSession: Bool, graphicalSessionID: es_graphical_session_id_t) {
+        public init(success: Bool, sourceAddressType: es_address_type_t, sourceAddress: String?, viewerAppleID: String?, authenticationType: String, authenticationUsername: String?, sessionUsername: String?, existingSession: Bool, graphicalSessionID: es_graphical_session_id_t) {
             self.success = success
             self.sourceAddressType = sourceAddressType
             self.sourceAddress = sourceAddress
@@ -1712,17 +1712,17 @@ public extension ESEvent {
 
         /// Optional. Source address of connection, or NULL. Depending on the transport used, the source address may
         /// or may not be available.
-        public var sourceAddress: String
+        public var sourceAddress: String?
 
         /// Optional. For screen sharing initiated using an Apple ID (e.g., from Messages or FaceTime), this is the
         /// viewer's (client's) Apple ID. It is not necessarily the Apple ID that invited the screen sharing. NULL
         /// if unavailable.
-        public var viewerAppleID: String
+        public var viewerAppleID: String?
 
         /// Graphical session id of the screen shared.
         public var graphicalSessionID: es_graphical_session_id_t
         
-        public init(sourceAddressType: es_address_type_t, sourceAddress: String, viewerAppleID: String, graphicalSessionID: es_graphical_session_id_t) {
+        public init(sourceAddressType: es_address_type_t, sourceAddress: String?, viewerAppleID: String?, graphicalSessionID: es_graphical_session_id_t) {
             self.sourceAddressType = sourceAddressType
             self.sourceAddress = sourceAddress
             self.viewerAppleID = viewerAppleID
@@ -2187,12 +2187,12 @@ public extension ESEvent {
         /// Optional. Path that was subject to remediation, if any. This path is not necessarily a malicious binary,
         /// it can also be a legitimate file containing a malicious portion. Specifically, the file at this path may
         /// still exist after successful remediation.
-        public var remediatedPath: String
+        public var remediatedPath: String?
 
         /// Audit token of process that was subject to remediation, if any.
         public var remediatedProcessAuditToken: audit_token_t?
         
-        public init(signatureVersion: String, malwareIdentifier: String, incidentIdentifier: String, actionType: String, success: Bool, resultDescription: String, remediatedPath: String, remediatedProcessAuditToken: audit_token_t?) {
+        public init(signatureVersion: String, malwareIdentifier: String, incidentIdentifier: String, actionType: String, success: Bool, resultDescription: String, remediatedPath: String?, remediatedProcessAuditToken: audit_token_t?) {
             self.signatureVersion = signatureVersion
             self.malwareIdentifier = malwareIdentifier
             self.incidentIdentifier = incidentIdentifier
@@ -2214,7 +2214,7 @@ public extension ESEvent {
         public var success: Bool
 
         /// Optional. If success is false, a failure message is contained in this field
-        public var failureMessage: String
+        public var failureMessage: String?
 
         /// The uid of the user who initiated the su
         public var fromUID: uid_t
@@ -2226,10 +2226,10 @@ public extension ESEvent {
         public var toUID: uid_t?
 
         /// Optional. If success, the user name that is going to be substituted
-        public var toUsername: String
+        public var toUsername: String?
 
         /// Optional. If success, the shell is going to execute
-        public var shell: String
+        public var shell: String?
 
         /// If success, the arguments are passed into to the shell
         public var args: [String]
@@ -2237,7 +2237,7 @@ public extension ESEvent {
         /// If success, list of environment variables that is going to be substituted
         public var env: [String]
         
-        public init(success: Bool, failureMessage: String, fromUID: uid_t, fromUsername: String, toUID: uid_t? = nil, toUsername: String, shell: String, args: [String], env: [String]) {
+        public init(success: Bool, failureMessage: String?, fromUID: uid_t, fromUsername: String, toUID: uid_t? = nil, toUsername: String?, shell: String?, args: [String], env: [String]) {
             self.success = success
             self.failureMessage = failureMessage
             self.fromUID = fromUID
@@ -2264,18 +2264,18 @@ public extension ESEvent {
         public var fromUID: uid_t?
 
         /// Optional. The username of the user who initiated the sudo
-        public var fromUsername: String
+        public var fromUsername: String?
 
         /// Describes whether or not the to_uid is interpretable
         public var toUID: uid_t?
 
         /// Optional. If success, the user name that is going to be substituted
-        public var toUsername: String
+        public var toUsername: String?
 
         /// Optional. The command to be run
-        public var command: String
+        public var command: String?
         
-        public init(success: Bool, rejectInfo: RejectInfo? = nil, fromUID: uid_t? = nil, fromUsername: String, toUID: uid_t? = nil, toUsername: String, command: String) {
+        public init(success: Bool, rejectInfo: RejectInfo? = nil, fromUID: uid_t? = nil, fromUsername: String?, toUID: uid_t? = nil, toUsername: String?, command: String?) {
             self.success = success
             self.rejectInfo = rejectInfo
             self.fromUID = fromUID
@@ -2417,9 +2417,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, member: ESODMemberID, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, member: ESODMemberID, nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -2459,9 +2459,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, member: ESODMemberID, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, member: ESODMemberID, nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -2501,9 +2501,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, members: [ESODMemberID], nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, members: [ESODMemberID], nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -2540,9 +2540,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, accountType: es_od_account_type_t, accountName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, accountType: es_od_account_type_t, accountName: String, nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -2576,9 +2576,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, userName: String, nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -2611,9 +2611,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, userName: String, nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -2659,9 +2659,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValue: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValue: String, nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -2712,9 +2712,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValue: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValue: String, nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -2765,9 +2765,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValues: [String], nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, recordType: es_od_record_type_t, recordName: String, attributeName: String, attributeValues: [String], nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -2803,9 +2803,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, userName: String, nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -2838,9 +2838,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -2873,9 +2873,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, userName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, userName: String, nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
@@ -2908,9 +2908,9 @@ public extension ESEvent {
         
         /// Optional. If node_name is "/Local/Default", this is the path of the database against which OD is
         /// authenticating.
-        public var dbPath: String
+        public var dbPath: String?
         
-        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, nodeName: String, dbPath: String) {
+        public init(instigator: ESProcess?, instigatorToken: audit_token_t?, errorCode: Int32, groupName: String, nodeName: String, dbPath: String?) {
             self.instigator = instigator
             self.instigatorToken = instigatorToken
             self.errorCode = errorCode
