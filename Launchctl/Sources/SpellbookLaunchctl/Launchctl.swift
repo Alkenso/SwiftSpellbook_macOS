@@ -39,7 +39,7 @@ extension Launchctl {
     public static let errorDomain = "LaunchctlErrorDomain"
 }
 
-public struct Launchctl {
+public struct Launchctl: Sendable {
     public let domainTarget: DomainTarget
     
     public init(domainTarget: DomainTarget) {
@@ -87,7 +87,7 @@ public struct Launchctl {
 }
 
 extension Launchctl {
-    public enum DomainTarget {
+    public enum DomainTarget: Sendable {
         /// `system` domain target usually used by system-wide daemons, privileged helpers, system extensions.
         case system
         

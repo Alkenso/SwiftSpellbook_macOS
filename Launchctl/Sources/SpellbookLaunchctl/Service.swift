@@ -24,7 +24,7 @@ import Foundation
 import SpellbookFoundation
 
 extension Launchctl {
-    public struct Service {
+    public struct Service: Sendable {
         /// Service name
         public var name: String
         
@@ -93,7 +93,7 @@ extension Launchctl {
 }
 
 extension Launchctl {
-    public struct ServiceInfo: Equatable, Codable {
+    public struct ServiceInfo: Equatable, Codable, Sendable {
         public var pid: pid_t?
         public var daemon: DaemonInfo?
         public var loginItem: LoginItemInfo?
@@ -118,12 +118,12 @@ extension Launchctl {
         }
     }
     
-    public enum ExitReason: Equatable, Codable {
+    public enum ExitReason: Equatable, Codable, Sendable {
         case signal(Int32)
         case exitCode(Int32)
     }
     
-    public struct DaemonInfo: Equatable, Codable {
+    public struct DaemonInfo: Equatable, Codable, Sendable {
         public var plistPath: String
         public var program: String
         public var arguments: [String]?
@@ -142,7 +142,7 @@ extension Launchctl {
         }
     }
     
-    public struct LoginItemInfo: Equatable, Codable {
+    public struct LoginItemInfo: Equatable, Codable, Sendable {
         public var identifier: String
         public var parentIdentifier: String
         
@@ -152,7 +152,7 @@ extension Launchctl {
         }
     }
     
-    public struct Environment: Equatable, Codable {
+    public struct Environment: Equatable, Codable, Sendable {
         public var generic: [String: String]?
         public var `default`: [String: String]?
         public var inherited: [String: String]?
