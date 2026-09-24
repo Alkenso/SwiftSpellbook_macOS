@@ -37,3 +37,11 @@ internal func runLaunchctl(_ args: [String]) throws -> String {
     
     return stdout
 }
+
+nonisolated(unsafe)
+public var _runLaunchctlProcess: (_ args: [String]) -> (code: Int32, stdout: String, stderr: String) = { args in
+    Process.launch(
+        tool: URL(fileURLWithPath: "/bin/launchctl"),
+        arguments: args
+    )
+}
