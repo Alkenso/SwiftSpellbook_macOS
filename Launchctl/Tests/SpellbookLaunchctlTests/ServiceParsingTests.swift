@@ -120,10 +120,10 @@ class ServiceParsingTests: XCTestCase {
         XCTAssertEqual(info.pid, 928)
         XCTAssertEqual(daemon, .init(
             plistPath: "/System/Library/LaunchDaemons/com.apple.akd.plist",
-            program: "/System/Library/PrivateFrameworks/AuthKit.framework/Versions/A/Support/akd",
-            arguments: ["/System/Library/PrivateFrameworks/AuthKit.framework/Versions/A/Support/akd"],
-            bundleID: nil
+            program: "/System/Library/PrivateFrameworks/AuthKit.framework/Versions/A/Support/akd"
         ))
+        XCTAssertEqual(info.execution.arguments, ["/System/Library/PrivateFrameworks/AuthKit.framework/Versions/A/Support/akd"])
+        XCTAssertNil(info.bundle?.identifier)
         XCTAssertEqual(info.endpoints.flatMap(Set.init), [
             "com.apple.ak.auth.xpc",
             "com.apple.ak.anisette.xpc",
@@ -150,9 +150,9 @@ class ServiceParsingTests: XCTestCase {
             program identifier = com.vendor.helper (mode: 1)
             parent bundle identifier = com.vendor.vendor
             parent bundle version = 93002
-            BTM uuid = 2149970E-6C68-4C98-8D3A-EBA52AC7B12F
+            BTM uuid = 00000000-0000-0000-0000-000000000002
             inherited environment = {
-                SSH_AUTH_SOCK => /private/tmp/com.apple.launchd.jAKz5dz9eY/Listeners
+                SSH_AUTH_SOCK => /private/tmp/com.apple.launchd.example/Listeners
             }
 
             default environment = {
@@ -208,7 +208,9 @@ class ServiceParsingTests: XCTestCase {
         XCTAssertEqual(info.pid, nil)
         XCTAssertEqual(loginItem, .init(
             identifier: "com.vendor.helper",
-            parentIdentifier: "com.vendor.vendor"
+            parentIdentifier: "com.vendor.vendor",
+            parentVersion: "93002",
+            mode: 1
         ))
         XCTAssertEqual(info.endpoints.flatMap(Set.init), [
             "com.vendor.helper",
@@ -216,7 +218,7 @@ class ServiceParsingTests: XCTestCase {
         XCTAssertEqual(info.environment, .init(
             generic: ["XPC_SERVICE_NAME": "com.vendor.helper"],
             default: ["PATH": "/usr/bin:/bin:/usr/sbin:/sbin"],
-            inherited: ["SSH_AUTH_SOCK": "/private/tmp/com.apple.launchd.jAKz5dz9eY/Listeners"]
+            inherited: ["SSH_AUTH_SOCK": "/private/tmp/com.apple.launchd.example/Listeners"]
         ))
         XCTAssertEqual(info.lastExitReason, .exitCode(0))
     }

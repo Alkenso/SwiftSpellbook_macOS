@@ -3,6 +3,23 @@
 import XCTest
 
 class LaunchctlParsingTests: XCTestCase {
+    func test_serviceNamesWithSpaces() throws {
+        let output = """
+        system = {
+            services = {
+                       0      0     com.example.task.Every 15 Minutes
+                     123      -     com.example.running
+                     456   (jt)     com.example.memory limited
+            }
+        }
+        """
+        XCTAssertEqual(try OutputParser(string: output).services(), [
+            "com.example.task.Every 15 Minutes",
+            "com.example.running",
+            "com.example.memory limited",
+        ])
+    }
+
     func test_services() throws {
         let output = """
         system = {

@@ -25,6 +25,25 @@ import SpellbookFoundation
 
 internal struct OutputParser {
     let string: String
+    let rootName: String?
+    private let indentation: String
+
+    init(string: String) {
+        var lines = string.components(separatedBy: .newlines)
+        while lines.first?.trimmingCharacters(in: .whitespaces).isEmpty == true { lines.removeFirst() }
+        while lines.last?.trimmingCharacters(in: .whitespaces).isEmpty == true { lines.removeLast() }
+        if let first = lines.first, !first.hasPrefix(" "), !first.hasPrefix("\t"),
+           first.hasSuffix(" = {"), lines.last == "}" {
+            rootName = String(first.dropLast(4))
+            lines.removeFirst()
+            lines.removeLast()
+        } else {
+            rootName = nil
+        }
+        self.string = lines.joined(separator: "\n")
+        indentation = lines.first { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            .map { String($0.prefix { $0 == " " || $0 == "\t" }) } ?? ""
+    }
     
     func value(pattern: String, options: NSRegularExpression.Options = [], groupIdx: Int) throws -> String {
         let values = try values(pattern: pattern, options: options, groupIdx: groupIdx)
@@ -39,7 +58,7 @@ internal struct OutputParser {
         let searchRange = NSRange(string.startIndex..<string.endIndex, in: string)
         let values = try regex.matches(in: string, range: searchRange)
             .map { result in
-                guard groupIdx <= result.numberOfRanges,
+                guard groupIdx >= 0, groupIdx < result.numberOfRanges,
                         let matchRange = Range(result.range(at: groupIdx), in: string)
                 else {
                     throw CommonError.notFound(what: "pattern group at index \(groupIdx)", value: pattern, where: self)
@@ -51,13 +70,16 @@ internal struct OutputParser {
     }
     
     func string(forKey key: String) throws -> String {
-        try value(pattern: "\(key) = (.*)", groupIdx: 1)
+        let key = NSRegularExpression.escapedPattern(for: key)
+        let prefix = NSRegularExpression.escapedPattern(for: indentation)
+        return try value(pattern: "^\(prefix)\(key) = (.*)$", options: .anchorsMatchLines, groupIdx: 1)
     }
     
     func stringArray(forKey key: String) throws -> [String] {
         let container = try container(forKey: key)
         let lines = try container
             .components(separatedBy: .newlines)
+            // An indented empty entry is an empty argument; only unindented blank lines are separators.
             .filter { !$0.isEmpty }
             .map { try OutputParser(string: $0).value(pattern: "\\s*(.*)", groupIdx: 1) }
         return lines
@@ -65,22 +87,39 @@ internal struct OutputParser {
     
     func stringDictionary(forKey key: String, separator: String = " => ") throws -> [String: String] {
         let lines = try stringArray(forKey: key)
-        return try lines
-            .map { try $0.parseKeyValuePair(separator: separator, allowSeparatorsInValue: true) }
-            .reduce(into: [:]) { $0[$1.key] = $1.value }
+        return try lines.reduce(into: [:]) { values, line in
+            guard !separator.isEmpty, let range = line.range(of: separator), range.lowerBound != line.startIndex else {
+                throw CommonError.invalidArgument(arg: "dictionary entry", invalidValue: nil, description: "Missing key or separator.")
+            }
+            // Empty environment values are valid. Split only once to preserve separators in values.
+            values[String(line[..<range.lowerBound])] = String(line[range.upperBound...])
+        }
     }
     
     func container(forKey key: String) throws -> String {
         try containers(key: key)[key].get(CommonError.notFound(what: "container", value: key, where: self))
     }
     
-    func containers(key: String? = nil) throws -> [String: String] {
-        let key = key ?? ".*?"
-        let pattern = "^([ \t]*)\"?(\(key))\"? = \\{\n?([\\S\\s]*?)\n?^\\1\\}"
+    func containers(key: String? = nil, separator: String = " = ") throws -> [String: String] {
+        try containerEntries(key: key, separator: separator)
+            .reduce(into: [:]) { $0[$1.key] = $1.body }
+    }
+
+    struct ContainerEntry {
+        let key: String
+        let body: String
+    }
+
+    /// Unlike a dictionary, preserves repeated names in event-trigger sections.
+    func containerEntries(key: String? = nil, separator: String = " = ") throws -> [ContainerEntry] {
+        let key = key.map(NSRegularExpression.escapedPattern(for:)) ?? ".*?"
+        let prefix = NSRegularExpression.escapedPattern(for: indentation)
+        let separator = NSRegularExpression.escapedPattern(for: separator)
+        let pattern = "^(\(prefix))\"?(\(key))\"?\(separator)\\{\n?([\\S\\s]*?)\n?^\\1\\}$"
         let regex = try NSRegularExpression(pattern: pattern, options: .anchorsMatchLines)
         let searchRange = NSRange(string.startIndex..<string.endIndex, in: string)
         let values = try regex.matches(in: string, range: searchRange)
-            .reduce(into: [String: String]()) { results, match in
+            .map { match in
                 guard match.numberOfRanges == 4,
                       let keyRange = Range(match.range(at: 2), in: string),
                       let valueRange = Range(match.range(at: 3), in: string)
@@ -89,7 +128,7 @@ internal struct OutputParser {
                 }
                 let key = String(string[keyRange])
                 let value = String(string[valueRange])
-                results[key] = value
+                return ContainerEntry(key: key, body: value)
             }
         return values
     }

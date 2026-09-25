@@ -24,16 +24,14 @@ import Foundation
 import SpellbookFoundation
 
 extension Launchctl {
-    public struct Service: Sendable {
-        /// Service name
+    public struct Service: Equatable, Codable, Sendable {
+        /// Service label, e.g. `com.apple.akd`.
         public var name: String
-        
-        /// Service domain target.
+        /// Domain containing the service, e.g. `.system`.
         public var domainTarget: DomainTarget
-        
-        /// Service target (consists of domain and name).
+        /// Full launchctl target, e.g. `system/com.apple.akd`.
         public var serviceTarget: String { "\(domainTarget)/\(name)" }
-        
+
         public init(name: String, domainTarget: DomainTarget) {
             self.name = name
             self.domainTarget = domainTarget
@@ -71,7 +69,8 @@ extension Launchctl {
             try runLaunchctl(["kill", String(signum), serviceTarget])
         }
         
-        /// Dumps the service's definition, properties & metadata in structured way.
+        /// Dumps the service's definition, properties & metadata in structured
+        /// way.
         public func info() throws -> ServiceInfo {
             let output = try print()
             do {
@@ -92,144 +91,7 @@ extension Launchctl {
     }
 }
 
-extension Launchctl {
-    public struct ServiceInfo: Equatable, Codable, Sendable {
-        public var pid: pid_t?
-        public var daemon: DaemonInfo?
-        public var loginItem: LoginItemInfo?
-        public var endpoints: [String]?
-        public var environment: Environment
-        public var lastExitReason: ExitReason?
-        
-        public init(
-            pid: pid_t?,
-            daemon: DaemonInfo?,
-            loginItem: LoginItemInfo?,
-            endpoints: [String]?,
-            environment: Environment,
-            lastExitReason: ExitReason?
-        ) {
-            self.pid = pid
-            self.daemon = daemon
-            self.loginItem = loginItem
-            self.endpoints = endpoints
-            self.environment = environment
-            self.lastExitReason = lastExitReason
-        }
-    }
-    
-    public enum ExitReason: Equatable, Codable, Sendable {
-        case signal(Int32)
-        case exitCode(Int32)
-    }
-    
-    public struct DaemonInfo: Equatable, Codable, Sendable {
-        public var plistPath: String
-        public var program: String
-        public var arguments: [String]?
-        public var bundleID: String?
-        
-        public init(
-            plistPath: String,
-            program: String,
-            arguments: [String]?,
-            bundleID: String?
-        ) {
-            self.plistPath = plistPath
-            self.program = program
-            self.arguments = arguments
-            self.bundleID = bundleID
-        }
-    }
-    
-    public struct LoginItemInfo: Equatable, Codable, Sendable {
-        public var identifier: String
-        public var parentIdentifier: String
-        
-        public init(identifier: String, parentIdentifier: String) {
-            self.identifier = identifier
-            self.parentIdentifier = parentIdentifier
-        }
-    }
-    
-    public struct Environment: Equatable, Codable, Sendable {
-        public var generic: [String: String]?
-        public var `default`: [String: String]?
-        public var inherited: [String: String]?
-        
-        public init(
-            generic: [String : String]? = nil,
-            `default`: [String: String]? = nil,
-            inherited: [String : String]? = nil
-        ) {
-            self.generic = generic
-            self.default = `default`
-            self.inherited = inherited
-        }
-    }
-}
-
 extension Launchctl.Service: CustomStringConvertible {
+    /// Full launchctl target, e.g. `system/com.apple.akd`.
     public var description: String { serviceTarget }
-}
-
-extension OutputParser {
-    internal func serviceInfo() throws -> Launchctl.ServiceInfo {
-        let value = Launchctl.ServiceInfo(
-            pid: (try? string(forKey: "pid")).flatMap(pid_t.init),
-            daemon: daemonInfo(),
-            loginItem: loginItemInfo(),
-            endpoints: try? Array(OutputParser(string: container(forKey: "endpoints")).containers().keys),
-            environment: environment(),
-            lastExitReason: exitReason()
-        )
-        
-        guard value.daemon != nil || value.loginItem != nil else {
-            throw NSError(launchctlExitCode: 109, stderr: "Service information has unsupported format.")
-        }
-        
-        return value
-    }
-    
-    fileprivate func exitReason() -> Launchctl.ExitReason? {
-        if let signal = (try? value(pattern: "last terminating signal = .*: (.*)", groupIdx: 1)).flatMap(Int32.init) {
-            return .signal(signal)
-        } else if let code = (try? string(forKey: "last exit code")).flatMap(Int32.init) {
-            return .exitCode(code)
-        } else {
-            return nil
-        }
-    }
-    
-    fileprivate func daemonInfo() -> Launchctl.DaemonInfo? {
-        do {
-            return .init(
-                plistPath: try string(forKey: "path"),
-                program: try string(forKey: "program"),
-                arguments: try? stringArray(forKey: "arguments"),
-                bundleID: try? string(forKey: "bundle id")
-            )
-        } catch {
-            return nil
-        }
-    }
-    
-    fileprivate func loginItemInfo() -> Launchctl.LoginItemInfo? {
-        do {
-            return .init(
-                identifier: try value(pattern: "program identifier = (.*?)( |$)", groupIdx: 1),
-                parentIdentifier: try string(forKey: "parent bundle identifier")
-            )
-        } catch {
-            return nil
-        }
-    }
-    
-    fileprivate func environment() -> Launchctl.Environment {
-        .init(
-            generic: try? stringDictionary(forKey: "environment"),
-            default: try? stringDictionary(forKey: "default environment"),
-            inherited: try? stringDictionary(forKey: "inherited environment")
-        )
-    }
 }

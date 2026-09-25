@@ -87,7 +87,7 @@ public struct Launchctl: Sendable {
 }
 
 extension Launchctl {
-    public enum DomainTarget: Sendable {
+    public enum DomainTarget: Hashable, Codable, Sendable {
         /// `system` domain target usually used by system-wide daemons, privileged helpers, system extensions.
         case system
         
@@ -125,8 +125,11 @@ extension OutputParser {
     internal func services() throws -> [String] {
         let lines = try stringArray(forKey: "services")
         return lines
-            .map { $0.components(separatedBy: .whitespaces) }
-            .compactMap(\.last)
-            .filter { !$0.isEmpty }
+            .compactMap { line in
+                // Only PID and status are whitespace-delimited columns; labels can contain spaces.
+                let columns = line.split(maxSplits: 2, whereSeparator: \.isWhitespace)
+                guard columns.count == 3 else { return nil }
+                return String(columns[2].drop(while: \.isWhitespace))
+            }
     }
 }
