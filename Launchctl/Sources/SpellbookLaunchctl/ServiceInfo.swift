@@ -220,12 +220,14 @@ extension Launchctl {
         public var parentIdentifier: String
         /// Parent application's reported version, e.g. dotted `1.2.3` or build
         /// number `93002`; retained as text.
-        public var parentVersion: String
+        /// Not reported by every ServiceManagement registration.
+        public var parentVersion: String?
         /// Numeric registration mode from the program identifier suffix, e.g.
         /// `1` or `2`.
-        public var mode: Int
+        /// Older output can omit the `(mode: ...)` suffix entirely.
+        public var mode: Int?
 
-        public init(identifier: String, parentIdentifier: String, parentVersion: String, mode: Int) {
+        public init(identifier: String, parentIdentifier: String, parentVersion: String? = nil, mode: Int? = nil) {
             self.identifier = identifier
             self.parentIdentifier = parentIdentifier
             self.parentVersion = parentVersion
@@ -533,9 +535,10 @@ extension Launchctl {
         /// Reported hide flag, e.g. `false`.
         public var hide: Bool
         /// Reported watching flag, e.g. `false`.
-        public var watching: Bool
+        /// Older endpoint output can omit this flag; nil is not false.
+        public var watching: Bool?
 
-        public init(port: UInt64, active: Bool, managed: Bool, reset: Bool, hide: Bool, watching: Bool) {
+        public init(port: UInt64, active: Bool, managed: Bool, reset: Bool, hide: Bool, watching: Bool? = nil) {
             self.port = port
             self.active = active
             self.managed = managed
@@ -1056,8 +1059,8 @@ extension OutputParser {
         return .init(
             identifier: modeRange.map { String(identifier[..<$0.lowerBound]) } ?? identifier,
             parentIdentifier: parentIdentifier,
-            parentVersion: try requiredString(forKey: "parent bundle version"),
-            mode: try requiredValue(mode, forKey: "program identifier mode")
+            parentVersion: try? string(forKey: "parent bundle version"),
+            mode: mode
         )
     }
     
@@ -1200,7 +1203,7 @@ extension OutputParser {
                 managed: requiredValue(parser.boolean(forKey: "managed"), forKey: "managed"),
                 reset: requiredValue(parser.boolean(forKey: "reset"), forKey: "reset"),
                 hide: requiredValue(parser.boolean(forKey: "hide"), forKey: "hide"),
-                watching: requiredValue(parser.boolean(forKey: "watching"), forKey: "watching")
+                watching: parser.boolean(forKey: "watching")
             )
             value.hostSpecialPort = parser.specialPort(forKey: "host-special port")
             value.taskSpecialPort = parser.specialPort(forKey: "task-special port")

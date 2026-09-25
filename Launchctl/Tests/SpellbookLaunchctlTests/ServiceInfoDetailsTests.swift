@@ -738,6 +738,7 @@ class ServiceInfoDetailsTests: XCTestCase {
             info.communication?.eventChannels,
         ].compactMap { $0 }.flatMap { $0.values }
         let lines = output.components(separatedBy: .newlines)
+        XCTAssertEqual(endpoints.compactMap(\.watching).count, lines.filter { $0.hasPrefix("\t\t\twatching = ") }.count, filename)
         XCTAssertEqual(endpoints.compactMap(\.hostSpecialPort).count, lines.filter { $0.hasPrefix("\t\t\thost-special port = ") }.count, filename)
         XCTAssertEqual(endpoints.compactMap(\.taskSpecialPort).count, lines.filter { $0.hasPrefix("\t\t\ttask-special port = ") }.count, filename)
         XCTAssertEqual(endpoints.compactMap(\.nonLaunching).count, lines.filter { $0.hasPrefix("\t\t\tnon-launching = ") }.count, filename)

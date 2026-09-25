@@ -81,7 +81,7 @@ final class RequiredServiceInfoTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(Launchctl.ServiceInfo.self, from: JSONEncoder().encode(info)), info)
     }
 
-    func test_endpointRequiresPortAndStatusFlags() throws {
+    func test_endpointRequiresPortAndCoreStatusFlags() throws {
         let section = """
         endpoints = {
             "com.example.endpoint" = {
@@ -94,7 +94,7 @@ final class RequiredServiceInfoTests: XCTestCase {
             }
         }
         """
-        try checkRequiredSection(section, fields: ["port", "active", "managed", "reset", "hide", "watching"])
+        try checkRequiredSection(section, fields: ["port", "active", "managed", "reset", "hide"])
         let info = try OutputParser(string: addingSection(section)).serviceInfo()
         let endpoint = try XCTUnwrap(info.communication?.endpoints?["com.example.endpoint"])
         XCTAssertEqual(endpoint.port, 0)
@@ -147,16 +147,70 @@ final class RequiredServiceInfoTests: XCTestCase {
         XCTAssertThrowsError(try OutputParser(string: addingSection("bundle version = 1.0")).serviceInfo())
     }
 
-    func test_loginItemRequiresParentVersionAndMode() throws {
+    func test_loginItemRequiresIdentifiersButToleratesUnrecognizedMode() throws {
         let section = """
         program identifier = com.example.helper (mode: 1)
         parent bundle identifier = com.example.app
         parent bundle version = 1.0
         """
-        try checkRequiredSection(section, fields: ["program identifier", "parent bundle identifier", "parent bundle version"])
+        try checkRequiredSection(section, fields: ["program identifier", "parent bundle identifier"])
         for suffix in ["", " (mode: invalid)", " (mode: 1"] {
             let invalid = section.replacingOccurrences(of: " (mode: 1)", with: suffix)
-            XCTAssertThrowsError(try OutputParser(string: addingSection(invalid)).serviceInfo())
+            let info = try OutputParser(string: addingSection(invalid)).serviceInfo()
+            XCTAssertEqual(info.loginItem?.identifier, "com.example.helper")
+            XCTAssertNil(info.loginItem?.mode)
+        }
+    }
+
+    // Reduced fixtures isolate historically omitted metadata without claiming
+    // to represent the complete output of a particular macOS version.
+    func test_endpointWatchingMayBeAbsent() throws {
+        let section = """
+        endpoints = {
+            "com.example.endpoint" = {
+                port = 0x0
+                active = 0
+                managed = 1
+                reset = 0
+                hide = 0
+            }
+        }
+        """
+        let info = try OutputParser(string: addingSection(section)).serviceInfo()
+        let endpoint = try XCTUnwrap(info.communication?.endpoints?["com.example.endpoint"])
+        XCTAssertNil(endpoint.watching)
+        XCTAssertFalse(endpoint.active)
+        XCTAssertTrue(endpoint.managed)
+        XCTAssertEqual(try JSONDecoder().decode(Launchctl.ServiceInfo.self, from: JSONEncoder().encode(info)), info)
+        for (raw, expected) in [("0", false), ("1", true)] {
+            let present = section.replacingOccurrences(of: "hide = 0", with: "hide = 0\n        watching = \(raw)")
+            let info = try OutputParser(string: addingSection(present)).serviceInfo()
+            XCTAssertEqual(info.communication?.endpoints?["com.example.endpoint"]?.watching, expected)
+        }
+    }
+
+    func test_loginItemVersionAndModeMayBeAbsentIndependently() throws {
+        let section = """
+        program identifier = com.example.helper
+        parent bundle identifier = com.example.app
+        """
+        for includeVersion in [false, true] {
+            for includeMode in [false, true] {
+                var partial = section
+                if includeVersion { partial += "\nparent bundle version = 1.0" }
+                if includeMode { partial = partial.replacingOccurrences(of: "com.example.helper", with: "com.example.helper (mode: 1)") }
+                let submitted = addingSection(partial)
+                    .replacingOccurrences(of: "type = LaunchDaemon", with: "type = Submitted")
+                    .replacingOccurrences(of: "    program = /usr/bin/true\n", with: "")
+                let info = try OutputParser(string: submitted).serviceInfo()
+                XCTAssertNil(info.execution.program)
+                let loginItem = try XCTUnwrap(info.loginItem)
+                XCTAssertEqual(loginItem.identifier, "com.example.helper")
+                XCTAssertEqual(loginItem.parentIdentifier, "com.example.app")
+                XCTAssertEqual(loginItem.parentVersion, includeVersion ? "1.0" : nil)
+                XCTAssertEqual(loginItem.mode, includeMode ? 1 : nil)
+                XCTAssertEqual(try JSONDecoder().decode(Launchctl.ServiceInfo.self, from: JSONEncoder().encode(info)), info)
+            }
         }
     }
 

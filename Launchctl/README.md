@@ -51,7 +51,7 @@ print(info.resources.jetsam.activeMemoryLimit, info.communication?.sockets)
 | --- | --- |
 | `daemon` | Definition reported as `LaunchDaemon`. |
 | `agent` | Plist definition reported as `LaunchAgent`. |
-| `loginItem` | Program identifier/mode and parent bundle identifier/version; requires both identifiers, version and mode. |
+| `loginItem` | Program identifier/mode and parent bundle identifier/version; requires both identifiers; version and mode are optional. |
 | `bundle` | Bundle identifier/version, across daemons, agents, XPC services and submitted jobs. |
 | `management` | Explicit manager, Background Task Management UUID and DriverKit check-in metadata. |
 | `execution` | Executable/arguments, account, working directory, I/O paths, spawn policy and timing. |
@@ -86,14 +86,29 @@ optional nested objects, the requirement applies whenever that object exists.
 | `RuntimeInfo` | `activeCount`, `runs` | All 1,839 services, including services with no running process |
 | `ResourceInfo` | `jetsam` | All 1,839 services |
 | `JetsamInfo` | `priority`, `category`, `activeMemoryLimit`, `inactiveMemoryLimit` | All 1,839 services |
-| `EndpointInfo` | `port`, `active`, `managed`, `reset`, `hide`, `watching` | All 6,438 endpoints across five namespaces |
+| `EndpointInfo` | `port`, `active`, `managed`, `reset`, `hide` | All 6,438 endpoints across five namespaces |
 | `CoalitionInfo` | `id`, `name`, `type`, `state`, `activeCount` | All 2,430 resource/jetsam coalitions |
 | `EventTriggerInfo` | `name`, `stream`, `service`, `keepAlive`, `descriptor` | All 4,224 triggers; `monitor` is absent in 24 |
 | `BundleInfo` | `identifier` | All 131 bundle records; `version` appears in 47 |
-| `LoginItemInfo` | `identifier`, `parentIdentifier`, `parentVersion`, `mode` | All 4 login-item records |
+| `LoginItemInfo` | `identifier`, `parentIdentifier` | All 4 login-item records |
 | `DaemonInfo`, `AgentInfo` | Existing required definition fields | Daemon path/program and agent path |
 | `SpecialPortInfo` | `number` | Slot identity; its descriptive annotation remains optional |
 | `SocketInfo` | `isSystemLogger` | Other fields remain optional because 2 of 44 entries contain only the logger marker |
+
+Historical output establishes three compatibility exceptions to the capture-based
+requirements: `LoginItemInfo.mode`, `LoginItemInfo.parentVersion`, and
+`EndpointInfo.watching` are optional. Older login-item output can omit the mode
+suffix and endpoint watching flag ([original Big Sur capture](https://apple.stackexchange.com/questions/418462/a-launchd-job-without-plist-file-how-does-that-work-and-how-to-find-what-job-tr));
+a ServiceManagement job can also omit the parent version ([original submitted-job capture](https://apple.stackexchange.com/questions/473225/what-is-the-proper-way-to-stop-and-restart-a-service-that-is-a-bundled-daemon)).
+Absent values stay nil; in particular, an omitted watching flag is distinct from
+an explicit zero/false value. Initializers and Codable also allow these omissions.
+
+A published [macOS 13.7.4 capture](https://github.com/Jackett/Jackett/issues/16144)
+contains the required identity, execution, environment, runtime and Jetsam fields,
+so those remain required. The omission tests use reduced synthetic fixtures;
+there is no complete macOS 13 capture dataset or runtime verification here.
+This is targeted compatibility handling, not a guarantee of parsing every older
+launchctl format (for example, pre-Ventura output can differ more substantially).
 
 No field in `ManagementInfo` or `InstanceInfo` is universal within its group.
 `CommunicationInfo` remains optional because 50 services have none of its sections.
