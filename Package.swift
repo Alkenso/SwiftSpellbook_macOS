@@ -34,7 +34,8 @@ let package = Package(
             name: "SpellbookMac",
             dependencies: [
                 "s_membership",
-                .product(name: "SpellbookFoundation", package: "SwiftSpellbook")
+                .product(name: "SpellbookFoundation", package: "SwiftSpellbook"),
+                .product(name: "SpellbookGraphics", package: "SwiftSpellbook"),
             ],
             path: "Mac/Sources/SpellbookMac",
             swiftSettings: [

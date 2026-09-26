@@ -21,6 +21,7 @@
 //  SOFTWARE.
 
 import AppKit
+import SpellbookGraphics
 
 extension NSScreen {
     /// Converts rect between bottom-left and upper-left coordinate systems.
@@ -30,12 +31,6 @@ extension NSScreen {
     /// This method converts the coordinates between these coordinate systems using NSScreen.screens.first
     /// as the coordinate system basis.
     public func invertY(for rect: CGRect) -> CGRect {
-        rect.invertedY(height: frame.height)
-    }
-}
-
-extension CGRect {
-    public func invertedY(height: CGFloat) -> CGRect {
-        CGRect(x: origin.x, y: height - (origin.y + size.height), width: size.width, height: size.height)
+        rect.verticallyFlipped(fullHeight: frame.height)
     }
 }
