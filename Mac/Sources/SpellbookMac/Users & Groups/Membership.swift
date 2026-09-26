@@ -25,7 +25,7 @@ import Foundation
 @_implementationOnly import s_membership
 
 /// Swift wrapper around `membership.h` functional.
-public enum Membership {
+public enum Membership: Sendable {
     /// Convert a UID to a corresponding UUID.
     /// This call will always succeed and may return a synthesized
     /// UUID with the prefix FFFFEEEE-DDDD-CCCC-BBBB-AAAAxxxxxxxx,

@@ -30,8 +30,8 @@ import XPC
 /// Integers preserve signedness; dates use rounded Unix-epoch nanoseconds.
 /// Values outside XPC's range and strings or keys containing NUL throw
 /// `EncodingError.invalidValue` with the affected coding path.
-public struct XPCObjectEncoder {
-    public var userInfo: [CodingUserInfoKey: Any] = [:]
+public struct XPCObjectEncoder: Sendable {
+    public var userInfo: [CodingUserInfoKey: any Sendable] = [:]
 
     public init() {}
 

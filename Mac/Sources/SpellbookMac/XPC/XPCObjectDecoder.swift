@@ -29,8 +29,8 @@ import XPC
 /// Integers must fit the requested Swift type; XPC doubles and integers can
 /// decode as floating-point values. Invalid types and values throw
 /// `DecodingError` with the path of the value being decoded.
-public struct XPCObjectDecoder {
-    public var userInfo: [CodingUserInfoKey: Any] = [:]
+public struct XPCObjectDecoder: Sendable {
+    public var userInfo: [CodingUserInfoKey: any Sendable] = [:]
 
     public init() {}
 

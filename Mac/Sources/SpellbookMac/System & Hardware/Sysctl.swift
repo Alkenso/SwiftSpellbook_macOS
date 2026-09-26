@@ -23,7 +23,7 @@
 import Foundation
 import SpellbookFoundation
 
-public enum Sysctl {}
+public enum Sysctl: Sendable {}
 
 extension Sysctl {
     public static func procArgs(for pid: pid_t) throws -> (executable: String, args: [String]) {

@@ -61,7 +61,7 @@ extension FileManager {
     }
 }
 
-public struct ACL: Equatable, Codable {
+public struct ACL: Equatable, Codable, Sendable {
     public var entries: [Entry]
     
     public init(entries: [Entry] = []) {
@@ -87,7 +87,7 @@ extension ACL {
 }
 
 extension ACL {
-    public struct Entry: Equatable, Codable {
+    public struct Entry: Equatable, Codable, Sendable {
         public var tag: ACL.Tag
         public var permissions: ACL.Permissions
         public var qualifier: ACL.Qualifier
@@ -121,7 +121,7 @@ extension ACL.Entry {
 }
 
 extension ACL {
-    public struct Qualifier: Equatable, Codable {
+    public struct Qualifier: Equatable, Codable, Sendable {
         public var id: id_t
         public var type: Membership.IDType
         
@@ -140,7 +140,7 @@ extension ACL.Qualifier {
 extension acl_tag_t: @retroactive BridgedCEnum {}
 
 extension ACL {
-    public struct Tag: _ACLValue, Hashable, Codable {
+    public struct Tag: _ACLValue, Hashable, Codable, Sendable {
         public typealias ACLType = acl_tag_t
         
         public var rawValue: UInt32
@@ -166,7 +166,7 @@ extension ACL.Tag: CustomStringConvertible {
 extension acl_perm_t: @retroactive BridgedCEnum {}
 
 extension ACL {
-    public struct Permissions: _ACLValue, OptionSet, Codable {
+    public struct Permissions: _ACLValue, OptionSet, Codable, Sendable {
         public typealias ACLType = acl_perm_t
         
         public var rawValue: UInt32
@@ -196,7 +196,7 @@ extension ACL {
 extension acl_flag_t: @retroactive BridgedCEnum {}
 
 extension ACL {
-    public struct Flags: _ACLValue, Hashable, Codable {
+    public struct Flags: _ACLValue, Hashable, Codable, Sendable {
         public typealias ACLType = acl_flag_t
         
         public var rawValue: UInt32

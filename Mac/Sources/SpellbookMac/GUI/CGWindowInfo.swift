@@ -23,7 +23,7 @@
 import CoreGraphics
 import Foundation
 
-public struct CGWindowInfo {
+public struct CGWindowInfo: Sendable {
     /// The window ID, a unique value within the user session representing the window (kCGWindowNumber).
     public var windowNumber: CGWindowID
     
