@@ -25,7 +25,7 @@ import SpellbookFoundation
 
 private let log = SpellbookLogger.default.with(subsystem: "HDIUtil", category: "Parser")
 
-public struct HDIUtilParser {
+public struct HDIUtilParser: Sendable {
     public var options: Options
     
     public init(options: Options) {
@@ -34,7 +34,7 @@ public struct HDIUtilParser {
 }
 
 extension HDIUtilParser {
-    public struct Options {
+    public struct Options: Sendable {
         public var log: SpellbookLogLevel? = .warning
         public var `throw` = false
         

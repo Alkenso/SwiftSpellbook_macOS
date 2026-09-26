@@ -28,7 +28,7 @@ extension HDIUtil {
     public static let errorDomain = "HDIUtilErrorDomain"
 }
 
-public struct HDIUtil {
+public struct HDIUtil: Sendable {
     private var parser = HDIUtilParser(options: .init())
     
     public init() {}
@@ -60,11 +60,7 @@ public struct HDIUtil {
 }
 
 extension HDIUtil {
-    
-}
-
-extension HDIUtil {
-    public struct Image: Codable {
+    public struct Image: Codable, Sendable {
         public var blockCount: Int
         public var blockSize: Int
         public var imagePath: String
@@ -112,7 +108,7 @@ extension HDIUtil {
 }
 
 extension HDIUtil.Image {
-    public struct SystemEntity: Codable {
+    public struct SystemEntity: Codable, Sendable {
         public var contentHint: String
         public var devEntry: String
         public var mountPoint: String?
